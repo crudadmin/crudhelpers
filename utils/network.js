@@ -210,22 +210,4 @@ export class Network {
             }
         }
     }
-
-    async listenCapacitorNetwork(CapacitorNetwork) {
-        try {
-            //We need reset all listeners on initializing
-            CapacitorNetwork.removeAllListeners();
-
-            CapacitorNetwork.addListener('networkStatusChange', (status) => {
-                this.setConnected(status.connected, true);
-            });
-
-            //Update actual network status
-            let status = await CapacitorNetwork.getStatus();
-
-            this.setConnected(status.connected);
-        } catch (e) {
-            console.error('Network error:', e);
-        }
-    }
 }
