@@ -14,9 +14,6 @@ export class Axios {
             ...$axiosOptions,
         });
 
-        // TODO: Ajax store
-        this.$ajaxStore = null;
-
         this.addInterceptors();
 
         // Request helpers ($get, $post, ...)
@@ -196,7 +193,7 @@ export class Axios {
         //Don't make request if error request of same request is already scheduled on future. Wait...
         //It will happen automatically
         const alreadyScheduled =
-            this.$ajaxStore.isAlreadyScheduled(requestForLater);
+            this.ajaxStore().isAlreadyScheduled(requestForLater);
 
         // prettier-ignore
         if ( options._forceCheck !== true && alreadyScheduled.length ) {
@@ -205,7 +202,7 @@ export class Axios {
         }
 
         try {
-            let response = await $axios['$' + method](url, data);
+            let response = await this.axios['$' + method](url, data);
 
             useAutoAjaxResponse(response);
 
@@ -219,11 +216,15 @@ export class Axios {
                 throw Error(e);
             } else {
                 //Save request for later send
-                this.$ajaxStore.sendRequestLater(requestForLater);
+                this.ajaxStore().sendRequestLater(requestForLater);
 
                 //Show error in console
                 console.error(e);
             }
         }
+    }
+
+    ajaxStore() {
+        return this.options.ajaxStore || useAjaxStore();
     }
 }
