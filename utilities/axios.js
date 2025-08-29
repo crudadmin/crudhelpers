@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 export class Axios {
-    constructor(options = {}) {
+    constructor(options = {}, $axiosOptions = {}) {
         this.options = {
             baseURL: options.baseURL || import.meta.env.VITE_APP_SERVER_URL,
-            ...options,
+            ...$axiosOptions,
         };
 
         const headers = this.buildHeaders();
