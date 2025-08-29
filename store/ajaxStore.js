@@ -1,3 +1,5 @@
+import { generateUuid } from '../utilities/helpers';
+
 import moment from 'moment';
 import _ from 'lodash';
 
@@ -54,7 +56,7 @@ export const useAjaxStore = defineStore('ajax', {
             this.removeRequest(data);
 
             this.unsent.push({
-                uuid: useGenerateUuid(),
+                uuid: generateUuid(),
                 ...data,
                 errorCount: 0,
                 nextTryAt: nextTryAt(this.options.failedRequestDelaySeconds),
