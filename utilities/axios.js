@@ -4,22 +4,16 @@ export class Axios {
     constructor(options = {}, $axiosOptions = {}) {
         this.options = {
             baseURL: options.baseURL || import.meta.env.VITE_APP_SERVER_URL,
-            ...$axiosOptions,
+            token: options.token,
+            locale: options.locale,
+            headers: options.headers,
         };
 
-        const headers = this.buildHeaders();
-
         this.$axios = axios.create({
-            ...this.options,
-            addHeaders: () => {
-                return headers;
-            },
-            headers: {
-                common: {},
-            },
+            ...$axiosOptions,
         });
 
-        this.addInterceptors(options.addHeaders);
+        this.addInterceptors();
 
         // Request helpers ($get, $post, ...)
         this.addCustomMethods();
@@ -28,21 +22,26 @@ export class Axios {
     }
 
     buildHeaders() {
-        let obj = {};
+        let headers = {};
 
         // Authorization header
         const token = this.options.token ? this.options.token() : null;
         if (token) {
-            obj['Authorization'] = 'Bearer ' + token;
+            headers['Authorization'] = 'Bearer ' + token;
         }
 
         // Locale header
         let locale = this.options.locale ? this.options.locale() : null;
         if (locale) {
-            obj['app-locale'] = locale;
+            headers['app-locale'] = locale;
         }
 
-        return obj;
+        // Add headers
+        if (this.options.headers) {
+            headers = { ...headers, ...this.options.headers(headers) };
+        }
+
+        return headers;
     }
 
     setLoading(state) {
@@ -68,7 +67,7 @@ export class Axios {
         }
     }
 
-    addInterceptors(addHeaders) {
+    addInterceptors() {
         this.$axios.interceptors.request.use(
             (successfulReq) => {
                 this.setLoading(true);
@@ -78,12 +77,9 @@ export class Axios {
                     // prettier-ignore
                     // console.log('[AXIOS]', successfulReq.method.toUpperCase(), '-', successfulReq.url);
 
-                    //Add cart and auth headers into axios
-                    var appHeaders =
-                        typeof addHeaders == 'function' ? addHeaders() : {};
-
-                    for (var key in appHeaders) {
-                        successfulReq.headers[key] = appHeaders[key];
+                    const headers = this.buildHeaders();
+                    for (var key in headers) {
+                        successfulReq.headers[key] = headers[key];
                     }
                 }
 
