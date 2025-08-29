@@ -131,6 +131,10 @@ export class Network {
      * Refresh user account every x time
      */
     async initializeRefresher() {
+        if (!this.refresher.callback) {
+            return;
+        }
+
         var networkStore = useNetworkStore(),
             response;
 
