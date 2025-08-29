@@ -9,16 +9,19 @@ export class Axios {
             headers: options.headers,
         };
 
-        this.$axios = axios.create({
+        this.axios = axios.create({
             ...$axiosOptions,
         });
+
+        // TODO: Ajax store
+        this.$ajaxStore = null;
 
         this.addInterceptors();
 
         // Request helpers ($get, $post, ...)
         this.addCustomMethods();
 
-        return this.$axios;
+        return this.axios;
     }
 
     buildHeaders() {
@@ -45,7 +48,7 @@ export class Axios {
     }
 
     setLoading(state) {
-        let args = this.$axios._onLoading;
+        let args = this.axios._onLoading;
 
         if (!args || !args.length) {
             return;
@@ -68,7 +71,7 @@ export class Axios {
     }
 
     addInterceptors() {
-        this.$axios.interceptors.request.use(
+        this.axios.interceptors.request.use(
             (successfulReq) => {
                 this.setLoading(true);
 
@@ -90,7 +93,7 @@ export class Axios {
             }
         );
 
-        this.$axios.interceptors.response.use(
+        this.axios.interceptors.response.use(
             (response) => {
                 //Toggle loading state
                 this.setLoading(false);
@@ -117,20 +120,20 @@ export class Axios {
             'put',
             'patch',
         ]) {
-            this.$axios['$' + method] = async function () {
+            this.axios['$' + method] = async function () {
                 return this[method]
                     .apply(this, arguments)
                     .then((res) => res && res.data);
             };
         }
 
-        this.$axios['$getOnline'] = function (url, data, errorMessage) {
+        this.axios['$getOnline'] = function (url, data, errorMessage) {
             useThrowConnectionAlert(errorMessage);
 
             return this.$get(url, data);
         };
 
-        this.$axios['$postOnline'] = function (
+        this.axios['$postOnline'] = function (
             url,
             data,
             options,
@@ -141,7 +144,7 @@ export class Axios {
             return this.$post(url, data, options);
         };
 
-        this.$axios['$deleteOnline'] = function (
+        this.axios['$deleteOnline'] = function (
             url,
             data,
             options,
@@ -152,15 +155,15 @@ export class Axios {
             return this.$delete(url, data, options);
         };
 
-        this.$axios['$getAsync'] = async function (url, data, options) {
+        this.axios['$getAsync'] = async function (url, data, options) {
             return await this.asyncRequest('get', url, data, options);
         };
 
-        this.$axios['$postAsync'] = async function (url, data, options) {
+        this.axios['$postAsync'] = async function (url, data, options) {
             return await this.asyncRequest('post', url, data, options);
         };
 
-        this.$axios['$deleteAsync'] = async function (url, data, options) {
+        this.axios['$deleteAsync'] = async function (url, data, options) {
             return await this.asyncRequest(
                 'delete',
                 url,
@@ -170,7 +173,7 @@ export class Axios {
             );
         };
 
-        this.$axios['loading'] = function (
+        this.axios['loading'] = function (
             variableOrCallback,
             variableKey = null
         ) {
@@ -198,7 +201,7 @@ export class Axios {
         //Don't make request if error request of same request is already scheduled on future. Wait...
         //It will happen automatically
         const alreadyScheduled =
-            useAjaxStore().isAlreadyScheduled(requestForLater);
+            this.$ajaxStore.isAlreadyScheduled(requestForLater);
 
         // prettier-ignore
         if ( options._forceCheck !== true && alreadyScheduled.length ) {
@@ -221,7 +224,7 @@ export class Axios {
                 throw Error(e);
             } else {
                 //Save request for later send
-                useAjaxStore().sendRequestLater(requestForLater);
+                this.$ajaxStore.sendRequestLater(requestForLater);
 
                 //Show error in console
                 console.error(e);
