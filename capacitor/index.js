@@ -2,23 +2,43 @@ import { Network } from '../utils/network';
 import { Network as CapacitorNetwork } from '@capacitor/network';
 
 export class Capacitor {
+    constructor(
+        options = {
+            user: null,
+            refresh: null,
+            refreshSeconds: 600,
+        }
+    ) {
+        this.network = null;
+
+        this.options = options;
+
+        return this;
+    }
+
     ready(callback) {
         //If is web browser, we want boot app immidiatelly
         if (isPlatform('mobileweb') || isPlatform('desktop')) {
-            this.ready(callback);
+            this.initialize(callback);
         }
 
         //On device, we want boot services after app is ready
         else {
             // prettier-ignore
             document.addEventListener('deviceready', () => {
-                this.ready(callback);
+                this.initialize(callback);
             }, false);
         }
     }
 
-    ready(callback) {
+    initialize(callback) {
         callback();
+
+        this.initializeNetwork({
+            user: this.options.user,
+            refresh: this.options.refresh,
+            refreshSeconds: this.options.refreshSeconds,
+        });
 
         return this;
     }
@@ -28,13 +48,13 @@ export class Capacitor {
      *
      * @returns
      */
-    network({ user, refresh, refreshSeconds }) {
-        const network = new Network({
+    initializeNetwork({ user, refresh, refreshSeconds }) {
+        this.network = new Network({
             user: user,
         });
 
         // How ofthen which method should be called
-        network.refresh(refresh, refreshSeconds);
+        this.network.refresh(refresh, refreshSeconds);
 
         (async () => {
             try {
@@ -51,7 +71,7 @@ export class Capacitor {
                 //Update actual network status
                 let status = await CapacitorNetwork.getStatus();
 
-                network.setConnected(status.connected);
+                this.network.setConnected(status.connected);
             } catch (e) {
                 console.error('Network error:', e);
             }
