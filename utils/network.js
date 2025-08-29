@@ -21,21 +21,15 @@ export class Network {
      *
      * Methods in this boot method needs to have remove listeners feature. Because boot may be stared many times in app run.
      */
-    listen(callback) {
-        const setState = (state, forceCheckOnNetworkBoot = false) => {
-            this.connected = state;
+    setConnected(state, forceCheckOnNetworkBoot = false) {
+        this.connected = state;
 
-            useNetworkStore().setConnection(state);
+        useNetworkStore().setConnected(state);
 
-            //On network change try send failed requests or do something with ajax...
-            if (this.connected) {
-                this.initConnectionState(forceCheckOnNetworkBoot);
-            }
-        };
-
-        callback(setState);
-
-        return this;
+        //On network change try send failed requests or do something with ajax...
+        if (this.connected) {
+            this.initConnectionState(forceCheckOnNetworkBoot);
+        }
     }
 
     refresh(callback, timeoutSeconds = 600) {

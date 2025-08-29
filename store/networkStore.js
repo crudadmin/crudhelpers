@@ -9,7 +9,7 @@ export const useNetworkStore = defineStore('network', {
     },
 
     actions: {
-        setConnection(status) {
+        setConnected(status) {
             this.connected = status;
         },
         setLastUpdate(state) {
