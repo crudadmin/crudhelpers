@@ -4,7 +4,6 @@ export const useNetworkStore = defineStore('network', {
     state() {
         return {
             connected: false,
-
             lastUpdateTime: null,
         };
     },
@@ -22,6 +21,9 @@ export const useNetworkStore = defineStore('network', {
     },
 
     getters: {
+        /**
+         * Displays if first appRequest has been made.
+         */
         isBooted() {
             return this.lastUpdateTime ? true : false;
         },
