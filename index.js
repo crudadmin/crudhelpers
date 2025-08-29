@@ -3,3 +3,4 @@ export * from './utils/network';
 
 export * from './store/ajaxStore';
 export * from './store/networkStore';
+export * from './store/otpStore';
