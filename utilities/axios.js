@@ -156,22 +156,16 @@ export class Axios {
             return this.$delete(url, data, options);
         };
 
-        this.axios['$getAsync'] = async function (url, data, options) {
+        this.axios['$getAsync'] = async (url, data, options) => {
             return await this.asyncRequest('get', url, data, options);
         };
 
-        this.axios['$postAsync'] = async function (url, data, options) {
+        this.axios['$postAsync'] = async (url, data, options) => {
             return await this.asyncRequest('post', url, data, options);
         };
 
-        this.axios['$deleteAsync'] = async function (url, data, options) {
-            return await this.asyncRequest(
-                'delete',
-                url,
-                data,
-                options,
-                $axios
-            );
+        this.axios['$deleteAsync'] = async (url, data, options) => {
+            return await this.asyncRequest('delete', url, data, options);
         };
 
         this.axios['loading'] = function (
