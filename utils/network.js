@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import moment from 'moment';
 
-const timeoutSeconds = 600;
+const defaultTimeoutSeconds = 600; //5 minutes
 
 export class Network {
     constructor({ user }) {
@@ -11,7 +11,7 @@ export class Network {
 
         this.refresher = {
             callback: null,
-            timeoutSeconds: timeoutSeconds,
+            timeoutSeconds: defaultTimeoutSeconds,
         };
     }
 
@@ -50,10 +50,10 @@ export class Network {
         const seconds = this.refresher.timeoutSeconds;
 
         if (typeof seconds === 'function') {
-            return seconds() || timeoutSeconds;
+            return seconds() || defaultTimeoutSeconds;
         }
 
-        return seconds || timeoutSeconds;
+        return seconds || defaultTimeoutSeconds;
     }
 
     /*
@@ -200,7 +200,7 @@ export class Network {
             }
         }
 
-        this.refreshApp();
+        await this.refreshApp();
     }
 
     async refreshApp() {
