@@ -1,4 +1,4 @@
-import { generateUuid } from '../utilities/helpers';
+import { generateUuid } from '../utils/helpers';
 
 import moment from 'moment';
 import _ from 'lodash';
@@ -60,7 +60,7 @@ export const useAjaxStore = defineStore('ajax', {
                 ...data,
                 errorCount: 0,
                 nextTryAt: nextTryAt(this.options.failedRequestDelaySeconds),
-                connected: useAppStore().connected ? true : false,
+                connected: useNetworkStore().connected ? true : false,
             });
         },
         removeRequest(request) {
