@@ -10,6 +10,7 @@ export class Axios {
         };
 
         this.axios = axios.create({
+            baseURL: this.options.baseURL,
             ...$axiosOptions,
         });
 
