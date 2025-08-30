@@ -1,5 +1,6 @@
 import { Network } from '../utils/network';
 import { Network as CapacitorNetwork } from '@capacitor/network';
+import { isPlatform } from '@ionic/vue';
 
 export class Capacitor {
     constructor(
