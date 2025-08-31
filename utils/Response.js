@@ -79,8 +79,6 @@ export class Response {
     }
 
     bindStores(data) {
-        const stores = this.stores;
-
         const bindStore = (store, key, value) => {
             if (typeof store[key] == 'function') {
                 store[key](value);
@@ -89,7 +87,7 @@ export class Response {
             }
         };
 
-        stores.forEach((store) => {
+        this.stores.forEach((store) => {
             for (var key in data) {
                 //Bind by slash path
                 if (key.includes('/')) {
