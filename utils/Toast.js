@@ -1,5 +1,4 @@
 import _ from 'lodash';
-import { ref, watch, nextTick } from 'vue';
 
 export class Toast {
     constructor({ opener }) {
@@ -9,7 +8,23 @@ export class Toast {
     }
 
     open(options) {
-        this.opener(options);
+        const opener = this.opener;
+
+        // Identifiy ionic toast opener
+        if (
+            typeof opener === 'object' &&
+            'create' in opener &&
+            'dismiss' in opener
+        ) {
+            this.openIonicToast(options);
+        }
+
+        // Custom opener
+        else if (typeof opener === 'function') {
+            opener(options);
+        } else {
+            console.error('Invalid opener', opener);
+        }
     }
 
     error(options = {}) {
@@ -45,5 +60,36 @@ export class Toast {
         this.error({ message });
 
         throw 'Connection for this action is required.';
+    }
+
+    async openIonicToast(options) {
+        Mobile.waitTillKeyboardClose();
+
+        options = typeof options == 'object' ? options : { message: options };
+
+        let { message, duration, cssClass } = options;
+
+        duration = duration || 2500;
+
+        const toast = await this.opener.create({
+            message,
+            duration,
+            cssClass,
+            swipeGesture: 'vertical',
+        });
+
+        toast.present();
+
+        if (toast.shadowRoot) {
+            toast.shadowRoot.addEventListener('click', () => {
+                if (options.click) {
+                    options.click();
+                }
+
+                if (toast) {
+                    toast.dismiss();
+                }
+            });
+        }
     }
 }

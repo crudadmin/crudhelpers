@@ -1,6 +1,6 @@
 import { Network } from '../utils/Network';
 import { Network as CapacitorNetwork } from '@capacitor/network';
-import { isPlatform } from '@ionic/vue';
+import { Keyboard } from '@capacitor/keyboard';
 
 export class Capacitor {
     constructor(
@@ -19,7 +19,7 @@ export class Capacitor {
 
     ready(callback) {
         //If is web browser, we want boot app immidiatelly
-        if (isPlatform('mobileweb') || isPlatform('desktop')) {
+        if (Mobile.isDesktop()) {
             this.initialize(callback);
         }
 
@@ -40,6 +40,8 @@ export class Capacitor {
             refresh: this.options.refresh,
             refreshSeconds: this.options.refreshSeconds,
         });
+
+        this.initializeKeyboard();
 
         return this;
     }
@@ -80,5 +82,23 @@ export class Capacitor {
         })();
 
         return this;
+    }
+
+    initializeKeyboard() {
+        const mobileStore = useMobileStore();
+
+        mobileStore.keyboard = false;
+
+        if (Mobile.isDesktop()) {
+            return;
+        }
+
+        Keyboard.addListener('keyboardWillShow', (info) => {
+            mobileStore.keyboard = true;
+        });
+
+        Keyboard.addListener('keyboardDidHide', (info) => {
+            mobileStore.keyboard = false;
+        });
     }
 }

@@ -6,3 +6,6 @@ export const generateUuid = () => {
         ).toString(16)
     );
 };
+
+export const useSleep = (delay) =>
+    new Promise((resolve) => setTimeout(resolve, delay));
