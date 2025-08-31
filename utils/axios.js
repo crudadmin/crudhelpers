@@ -126,7 +126,7 @@ export class Axios {
         }
 
         this.axios['$getOnline'] = function (url, data, errorMessage) {
-            useThrowConnectionAlert(errorMessage);
+            Toast.connectionError(errorMessage);
 
             return this.$get(url, data);
         };
@@ -137,7 +137,7 @@ export class Axios {
             options,
             errorMessage
         ) {
-            useThrowConnectionAlert(errorMessage);
+            Toast.connectionError(errorMessage);
 
             return this.$post(url, data, options);
         };
@@ -148,7 +148,7 @@ export class Axios {
             options,
             errorMessage
         ) {
-            useThrowConnectionAlert(errorMessage);
+            Toast.connectionError(errorMessage);
 
             return this.$delete(url, data, options);
         };

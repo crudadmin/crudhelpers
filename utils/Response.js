@@ -31,17 +31,17 @@ export class Response {
 
             //Validation error
             if ([401, 403].includes(status)) {
-                useShowErrorToast({
+                Toast.error({
                     // prettier-ignore
                     message: data?.error && data?.message ? data.message : __('Tento obsah už nie je k dispozícii.'),
                 });
             } else if (status == 404) {
-                useShowErrorToast({
+                Toast.error({
                     // prettier-ignore
                     message: __('Ľutujeme, dany záznam nebol nájdeny. Pravdepodobne už neexistuje.'),
                 });
             } else if (status == 422 && data.errors) {
-                useShowErrorToast({
+                Toast.error({
                     message: Object.values(data.errors).join(' '),
                     duration: 5000,
                 });
@@ -56,10 +56,9 @@ export class Response {
                     };
 
                 if (isErrorCode || response instanceof Error) {
-                    useShowErrorToast(obj);
+                    Toast.error(obj);
                 } else {
-                    //TODO: use toast instead of success toast
-                    useShowToast(obj);
+                    Toast.open(obj);
                 }
             }
 
@@ -67,7 +66,7 @@ export class Response {
             else if (isError) {
                 console.error(response);
 
-                useThrowUnknownError();
+                Toast.unknown();
             }
         }
 
@@ -75,7 +74,7 @@ export class Response {
         else if (isError) {
             console.error(response);
 
-            useThrowUnknownError();
+            Toast.unknown();
         }
     }
 
