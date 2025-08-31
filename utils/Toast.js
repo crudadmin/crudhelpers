@@ -13,10 +13,7 @@ export class Toast {
         // Identifiy ionic toast opener
         if (isIonicToastOpener(opener)) {
             openIonicToast(opener, options);
-        }
-
-        // Custom opener
-        else if (typeof opener === 'function') {
+        } else if (typeof opener === 'function') {
             opener(options);
         } else {
             console.error('Invalid opener', opener);
