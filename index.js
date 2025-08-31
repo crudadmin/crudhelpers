@@ -1,5 +1,5 @@
-export * from './utils/axios';
-export * from './utils/network';
+export * from './utils/Axios';
+export * from './utils/Network';
 
 import Translator from './utils/Translator';
 

@@ -1,4 +1,4 @@
-import { Network } from '../utils/network';
+import { Network } from '../utils/Network';
 import { Network as CapacitorNetwork } from '@capacitor/network';
 import { isPlatform } from '@ionic/vue';
 
