@@ -1,3 +1,5 @@
+import { defineStore } from 'pinia';
+
 import { generateUuid } from '../utils/helpers';
 
 import moment from 'moment';

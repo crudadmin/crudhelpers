@@ -1,3 +1,5 @@
+import { defineStore } from 'pinia';
+
 export const useLocaleStore = defineStore('locale', {
     persist: true,
 

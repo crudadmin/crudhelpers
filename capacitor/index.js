@@ -57,6 +57,7 @@ export class Capacitor {
         // How ofthen which method should be called
         this.network.refresh(refresh, refreshSeconds);
 
+        // Listen for capacitor network status change
         (async () => {
             try {
                 //We need reset all listeners on initializing

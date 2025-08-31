@@ -1,3 +1,5 @@
+import { defineStore } from 'pinia';
+
 export const useOtpStore = defineStore('otp', {
     persist: true,
 
