@@ -1,8 +1,8 @@
 import { defineNuxtPlugin } from '#app';
 import Translator from '../../utils/Translator';
 
-export default defineNuxtPlugin(async ({ route, redirect, vueApp, hook }) => {
-    let translator = new Translator(useLocaleStore().translations);
+export default defineNuxtPlugin(async ({ vueApp, $pinia }) => {
+    let translator = new Translator(useLocaleStore($pinia).translations);
 
     await translator.install(vueApp);
 

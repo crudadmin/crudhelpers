@@ -12,12 +12,18 @@ const isPriorityPlugin = (plugin) => {
 // We need push pinia plugin at the beggining of the plugins array,
 // because some of our priority plugins depends on pinia plugin
 const addPriorityPluginsAtBeggining = (plugins) => {
-    return plugins.sort((a, b) => {
+    return _.sortBy(plugins, (a, b) => {
+        // Pinia should be at the beginning
         if (a.src.includes('@pinia/nuxt')) {
+            return -2;
+        }
+
+        // If we are using persistedstate plugin, we need to push it at the beginning as well
+        if (a.src.includes('pinia-plugin-persistedstate')) {
             return -1;
         }
 
-        return 1;
+        return 0;
     });
 };
 
@@ -29,7 +35,9 @@ export const regorganizePlugins = (plugins) => {
         (plugin) => !isPriorityPlugin(plugin)
     );
 
-    return addPriorityPluginsAtBeggining(
+    plugins = addPriorityPluginsAtBeggining(
         _.uniqBy(priorityPlugins.concat(normalPlugins), 'src')
     );
+
+    return plugins;
 };
