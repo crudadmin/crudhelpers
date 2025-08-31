@@ -1,5 +1,6 @@
 export * from './utils/Axios';
 export * from './utils/Network';
+export * from './utils/Modal';
 
 import Translator from './utils/Translator';
 
