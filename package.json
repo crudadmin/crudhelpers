@@ -23,6 +23,7 @@
     "exports": {
         ".": "./index.js",
         "./capacitor": "./capacitor/index.js",
-        "./nuxt": "./nuxt/nuxt.config.js"
+        "./nuxt": "./nuxt/nuxt.config.js",
+        "./helpers": "./utils/helpers.js"
     }
 }
