@@ -45,7 +45,7 @@ export const useOtpStore = defineStore('otp', {
         onCompleted(router) {
             //Bind data store from callback data
             if (this.options.callback) {
-                useBindPiniaStore(this.options.callback);
+                useResponse().bindStores(this.options.callback);
             }
 
             //Redirect to the route

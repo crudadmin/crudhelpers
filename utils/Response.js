@@ -10,9 +10,8 @@ export class Response {
     }
 
     run() {
-        const response = this.response;
-
-        var isError = response instanceof Error;
+        let response = this.response,
+            isError = response instanceof Error;
 
         //If is error response
         if (isError && response.response) {
@@ -27,7 +26,7 @@ export class Response {
 
             //Set store from request data
             if (store && this.stores) {
-                this.bindStores(this.stores, store);
+                this.bindStores(store);
             }
 
             //Validation error
@@ -59,7 +58,8 @@ export class Response {
                 if (isErrorCode || response instanceof Error) {
                     useShowErrorToast(obj);
                 } else {
-                    useShowSuccessToast(obj);
+                    //TODO: use toast instead of success toast
+                    useShowToast(obj);
                 }
             }
 
@@ -79,7 +79,9 @@ export class Response {
         }
     }
 
-    bindStores(stores, data) {
+    bindStores(data) {
+        const stores = this.stores;
+
         const bindStore = (store, key, value) => {
             if (typeof store[key] == 'function') {
                 store[key](value);
