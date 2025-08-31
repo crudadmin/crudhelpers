@@ -54,13 +54,13 @@ export class Modal {
         });
     }
 
-    openCloseCurrent = function () {
-        useCloseModal();
+    replace = function () {
+        this.close();
 
         const args = arguments;
 
         nextTick(() => {
-            useOpenModal(...args);
+            this.open(...args);
         });
     };
 }
