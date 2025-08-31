@@ -4,7 +4,9 @@ const isPriorityPlugin = (plugin) => {
     let prefix = plugin.src.split('/').pop().substr(0, 3);
 
     // Check if plugin prefix starts with 2 numbers and dot (eg: 01., 02., etc...)
-    return plugin.src.includes('crudhelpers/nuxt') && /^\d{2}\./.test(prefix);
+    return (
+        plugin.src.includes('helpers/nuxt/plugins') && /^\d{2}\./.test(prefix)
+    );
 };
 
 // We need push pinia plugin at the beggining of the plugins array,
