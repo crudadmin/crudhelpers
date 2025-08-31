@@ -11,12 +11,8 @@ export class Toast {
         const opener = this.opener;
 
         // Identifiy ionic toast opener
-        if (
-            typeof opener === 'object' &&
-            'create' in opener &&
-            'dismiss' in opener
-        ) {
-            this.openIonicToast(options);
+        if (isIonicToastOpener(opener)) {
+            openIonicToast(opener, options);
         }
 
         // Custom opener
@@ -61,35 +57,41 @@ export class Toast {
 
         throw 'Connection for this action is required.';
     }
-
-    async openIonicToast(options) {
-        Mobile.waitTillKeyboardClose();
-
-        options = typeof options == 'object' ? options : { message: options };
-
-        let { message, duration, cssClass } = options;
-
-        duration = duration || 2500;
-
-        const toast = await this.opener.create({
-            message,
-            duration,
-            cssClass,
-            swipeGesture: 'vertical',
-        });
-
-        toast.present();
-
-        if (toast.shadowRoot) {
-            toast.shadowRoot.addEventListener('click', () => {
-                if (options.click) {
-                    options.click();
-                }
-
-                if (toast) {
-                    toast.dismiss();
-                }
-            });
-        }
-    }
 }
+
+const isIonicToastOpener = (opener) => {
+    return (
+        typeof opener === 'object' && 'create' in opener && 'dismiss' in opener
+    );
+};
+
+const openIonicToast = async (opener, options) => {
+    Mobile.waitTillKeyboardClose();
+
+    options = typeof options == 'object' ? options : { message: options };
+
+    let { message, duration, cssClass } = options;
+
+    duration = duration || 2500;
+
+    const toast = await opener.create({
+        message,
+        duration,
+        cssClass,
+        swipeGesture: 'vertical',
+    });
+
+    toast.present();
+
+    if (toast.shadowRoot) {
+        toast.shadowRoot.addEventListener('click', () => {
+            if (options.click) {
+                options.click();
+            }
+
+            if (toast) {
+                toast.dismiss();
+            }
+        });
+    }
+};
