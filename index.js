@@ -2,7 +2,6 @@ export * from './utils/Axios.js';
 export * from './utils/Network.js';
 export * from './utils/Modal.js';
 export * from './utils/Toast.js';
-export * from './utils/Mobile.js';
 export * from './utils/Response.js';
 
 export * from './store/index.js';
