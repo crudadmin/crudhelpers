@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia';
-import { Response } from '../utils/Response.js';
+import { useResponse } from '../utils/helpers.js';
+
+// We need initialize here, because in nuxt app, .stores state is not preset in onCompleted trigger
+const Response = useResponse();
 
 export const useOtpStore = defineStore('otp', {
     persist: true,

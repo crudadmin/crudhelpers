@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Toast } from './Toast.js';
 import { useAjaxStore } from '../store/index.js';
+import { useResponse } from './helpers.js';
 
 export const Axios = new (class Axios {
     setOptions(options = {}, $axiosOptions = {}) {
@@ -206,7 +207,7 @@ export const Axios = new (class Axios {
         try {
             let response = await this.axios['$' + method](url, data);
 
-            useAutoAjaxResponse(response);
+            useResponse(response);
 
             if (options.callback) {
                 await options.callback();

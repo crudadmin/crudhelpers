@@ -3,6 +3,8 @@ import { Toast } from './Toast.js';
 export const Response = new (class Response {
     constructor() {
         this.stores = [];
+
+        return this;
     }
 
     setStores(stores) {

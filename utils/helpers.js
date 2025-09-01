@@ -1,9 +1,18 @@
 import _ from 'lodash';
 import * as StoresPreset from '../store/index.js';
 import { Axios } from './Axios.js';
+import { Response } from './Response.js';
 
 export const useAxios = () => {
     return Axios.axios;
+};
+
+export const useResponse = (payload) => {
+    if (payload) {
+        return Response.get(payload);
+    }
+
+    return Response;
 };
 
 export const generateUuid = () => {
