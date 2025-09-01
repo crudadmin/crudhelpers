@@ -1,9 +1,6 @@
 import { defineStore } from 'pinia';
 import { useResponse } from '../utils/helpers.js';
 
-// We need initialize here, because in nuxt app, .stores state is not preset in onCompleted trigger
-const Response = useResponse();
-
 export const useOtpStore = defineStore('otp', {
     persist: true,
 
@@ -49,7 +46,7 @@ export const useOtpStore = defineStore('otp', {
         onCompleted(router) {
             //Bind data store from callback data
             if (this.options.callback) {
-                Response.bindStores(this.options.callback);
+                useResponse().bindStores(this.options.callback);
             }
 
             //Redirect to the route
