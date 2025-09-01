@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 
-import { generateUuid } from '../utils/helpers';
+import { generateUuid } from '../utils/helpers.js';
 
 import moment from 'moment';
 import _ from 'lodash';

@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import * as StoresPreset from '../store/index.js';
 
 export const generateUuid = () => {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -84,4 +85,10 @@ export const useObjectToFormData = (obj, rootName, ignoreList) => {
     appendFormData(obj, rootName);
 
     return formData;
+};
+
+export const AutoImportPreset = (preset) => {
+    return {
+        '@crudadmin/helpers': Object.keys(StoresPreset),
+    };
 };

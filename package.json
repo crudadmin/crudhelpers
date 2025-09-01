@@ -10,6 +10,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@capacitor/keyboard": "^7.0.2",
         "@capacitor/network": "^7.0.2",
         "@nuxt/kit": "^4.0.3",
         "@pinia/nuxt": "^0.11.2",
@@ -24,6 +25,7 @@
         ".": "./index.js",
         "./capacitor": "./capacitor/index.js",
         "./nuxt": "./nuxt/nuxt.config.js",
-        "./helpers": "./utils/helpers.js"
+        "./helpers": "./utils/helpers.js",
+        "./store": "./store/index.js"
     }
 }

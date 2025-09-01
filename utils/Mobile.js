@@ -1,4 +1,4 @@
-import { useSleep } from './helpers';
+import { useSleep } from './helpers.js';
 import { isPlatform } from '@ionic/vue';
 
 export class Mobile {

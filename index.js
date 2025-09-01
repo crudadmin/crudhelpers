@@ -1,11 +1,13 @@
-export * from './utils/Axios';
-export * from './utils/Network';
-export * from './utils/Modal';
-export * from './utils/Toast';
-export * from './utils/Mobile';
-export * from './utils/Response';
+export * from './utils/Axios.js';
+export * from './utils/Network.js';
+export * from './utils/Modal.js';
+export * from './utils/Toast.js';
+export * from './utils/Mobile.js';
+export * from './utils/Response.js';
 
-import Translator from './utils/Translator';
+export * from './store/index.js';
+
+import Translator from './utils/Translator.js';
 
 export const CrudadminVue = {
     install: (app, options) => {
