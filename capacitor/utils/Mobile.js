@@ -1,7 +1,8 @@
+import { useMobileStore } from '../../store/mobileStore.js';
 import { useSleep } from '../../utils/helpers.js';
 import { isPlatform } from '@ionic/vue';
 
-export class Mobile {
+export const Mobile = new (class Mobile {
     async waitTillKeyboardClose() {
         const delay = 300;
 
@@ -13,4 +14,4 @@ export class Mobile {
     isDesktop() {
         return (isPlatform('mobileweb') || isPlatform('desktop')) === true;
     }
-}
+})();

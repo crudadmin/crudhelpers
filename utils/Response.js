@@ -1,17 +1,16 @@
-export class Response {
-    constructor(response, stores = []) {
-        this.response = response;
+import { Toast } from './Toast.js';
 
-        this.stores = stores;
-
-        this.run();
-
-        return this;
+export const Response = new (class Response {
+    constructor() {
+        this.stores = [];
     }
 
-    run() {
-        let response = this.response,
-            isError = response instanceof Error;
+    setStores(stores) {
+        this.stores = stores;
+    }
+
+    get(response) {
+        let isError = response instanceof Error;
 
         //If is error response
         if (isError && response.response) {
@@ -79,6 +78,12 @@ export class Response {
     }
 
     bindStores(data) {
+        let stores = this.stores;
+
+        if (typeof stores === 'function') {
+            stores = stores();
+        }
+
         const bindStore = (store, key, value) => {
             if (typeof store[key] == 'function') {
                 store[key](value);
@@ -87,7 +92,7 @@ export class Response {
             }
         };
 
-        this.stores.forEach((store) => {
+        stores.forEach((store) => {
             for (var key in data) {
                 //Bind by slash path
                 if (key.includes('/')) {
@@ -108,4 +113,4 @@ export class Response {
             }
         });
     }
-}
+})();

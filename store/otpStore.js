@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { Response } from '../utils/Response.js';
 
 export const useOtpStore = defineStore('otp', {
     persist: true,
@@ -45,7 +46,7 @@ export const useOtpStore = defineStore('otp', {
         onCompleted(router) {
             //Bind data store from callback data
             if (this.options.callback) {
-                useResponse().bindStores(this.options.callback);
+                Response.bindStores(this.options.callback);
             }
 
             //Redirect to the route

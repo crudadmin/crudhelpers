@@ -1,6 +1,10 @@
 import { Network } from '../../utils/Network.js';
+import { Mobile } from './Mobile.js';
 import { Network as CapacitorNetwork } from '@capacitor/network';
 import { Keyboard } from '@capacitor/keyboard';
+import { useMobileStore } from '../../store/mobileStore.js';
+import { Toast } from '../../utils/Toast.js';
+import { toastController } from '@ionic/vue';
 
 export class Capacitor {
     constructor(
@@ -42,6 +46,8 @@ export class Capacitor {
         });
 
         this.initializeKeyboard();
+
+        this.setToastOpener();
 
         return this;
     }
@@ -99,6 +105,40 @@ export class Capacitor {
 
         Keyboard.addListener('keyboardDidHide', (info) => {
             mobileStore.keyboard = false;
+        });
+    }
+
+    setToastOpener() {
+        Toast.setOpener(async (options) => {
+            Mobile.waitTillKeyboardClose();
+
+            options =
+                typeof options == 'object' ? options : { message: options };
+
+            let { message, duration, cssClass } = options;
+
+            duration = duration || 2500;
+
+            const toast = await toastController.create({
+                message,
+                duration,
+                cssClass,
+                swipeGesture: 'vertical',
+            });
+
+            toast.present();
+
+            if (toast.shadowRoot) {
+                toast.shadowRoot.addEventListener('click', () => {
+                    if (options.click) {
+                        options.click();
+                    }
+
+                    if (toast) {
+                        toast.dismiss();
+                    }
+                });
+            }
         });
     }
 }

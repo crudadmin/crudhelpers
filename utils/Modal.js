@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { ref, watch, nextTick } from 'vue';
 
-export class Modal {
+export const Modal = new (class Modal {
     constructor() {
         this.modals = ref([]);
     }
@@ -63,4 +63,4 @@ export class Modal {
             this.open(...args);
         });
     };
-}
+})();

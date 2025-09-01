@@ -1,3 +1,5 @@
+import { useLocaleStore } from './store/localeStore.js';
+
 export * from './utils/Axios.js';
 export * from './utils/Network.js';
 export * from './utils/Modal.js';

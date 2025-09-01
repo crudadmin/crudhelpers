@@ -1,7 +1,9 @@
 import axios from 'axios';
+import { Toast } from './Toast.js';
+import { useAjaxStore } from '../store/index.js';
 
-export class Axios {
-    constructor(options = {}, $axiosOptions = {}) {
+export const Axios = new (class Axios {
+    setOptions(options = {}, $axiosOptions = {}) {
         this.options = {
             baseURL: options.baseURL || import.meta.env.VITE_APP_SERVER_URL,
             token: options.token,
@@ -193,7 +195,7 @@ export class Axios {
         //Don't make request if error request of same request is already scheduled on future. Wait...
         //It will happen automatically
         const alreadyScheduled =
-            this.ajaxStore().isAlreadyScheduled(requestForLater);
+            useAjaxStore().isAlreadyScheduled(requestForLater);
 
         // prettier-ignore
         if ( options._forceCheck !== true && alreadyScheduled.length ) {
@@ -216,15 +218,11 @@ export class Axios {
                 throw Error(e);
             } else {
                 //Save request for later send
-                this.ajaxStore().sendRequestLater(requestForLater);
+                useAjaxStore().sendRequestLater(requestForLater);
 
                 //Show error in console
                 console.error(e);
             }
         }
     }
-
-    ajaxStore() {
-        return this.options.ajaxStore || useAjaxStore();
-    }
-}
+})();

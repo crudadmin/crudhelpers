@@ -1,22 +1,17 @@
+import { useNetworkStore } from '../store/networkStore.js';
+
 import _ from 'lodash';
 
-export class Toast {
-    constructor({ opener }) {
+export const Toast = new (class Toast {
+    setOpener(opener) {
         this.opener = opener;
-
-        return this;
     }
 
     open(options) {
-        const opener = this.opener;
-
-        // Identifiy ionic toast opener
-        if (isIonicToastOpener(opener)) {
-            openIonicToast(opener, options);
-        } else if (typeof opener === 'function') {
-            opener(options);
+        if (typeof this.opener === 'function') {
+            this.opener(options);
         } else {
-            console.error('Invalid opener', opener);
+            console.error('Invalid opener', this.opener);
         }
     }
 
@@ -54,41 +49,4 @@ export class Toast {
 
         throw 'Connection for this action is required.';
     }
-}
-
-const isIonicToastOpener = (opener) => {
-    return (
-        typeof opener === 'object' && 'create' in opener && 'dismiss' in opener
-    );
-};
-
-const openIonicToast = async (opener, options) => {
-    Mobile.waitTillKeyboardClose();
-
-    options = typeof options == 'object' ? options : { message: options };
-
-    let { message, duration, cssClass } = options;
-
-    duration = duration || 2500;
-
-    const toast = await opener.create({
-        message,
-        duration,
-        cssClass,
-        swipeGesture: 'vertical',
-    });
-
-    toast.present();
-
-    if (toast.shadowRoot) {
-        toast.shadowRoot.addEventListener('click', () => {
-            if (options.click) {
-                options.click();
-            }
-
-            if (toast) {
-                toast.dismiss();
-            }
-        });
-    }
-};
+})();
