@@ -6,6 +6,10 @@ export const Modal = new (class Modal {
         this.modals = ref([]);
     }
 
+    show(name, callback) {
+        return this.open(name, callback);
+    }
+
     open(name, callback) {
         return this.modals.value.push({ name, callback });
     }

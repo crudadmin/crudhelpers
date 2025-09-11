@@ -7,6 +7,10 @@ export const Toast = new (class Toast {
         this.opener = opener;
     }
 
+    show(name, callback) {
+        return this.open(name, callback);
+    }
+
     open(options) {
         if (typeof this.opener === 'function') {
             this.opener(options);
