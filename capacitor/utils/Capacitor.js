@@ -74,7 +74,7 @@ export class Capacitor {
                 CapacitorNetwork.addListener(
                     'networkStatusChange',
                     (status) => {
-                        network.setConnected(status.connected, true);
+                        this.network.setConnected(status.connected, true);
                     }
                 );
 
