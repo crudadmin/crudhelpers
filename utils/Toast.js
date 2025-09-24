@@ -7,6 +7,10 @@ export const Toast = new (class Toast {
         this.opener = opener;
     }
 
+    isEnabled() {
+        return this.opener ? true : false;
+    }
+
     show(name, callback) {
         return this.open(name, callback);
     }
@@ -39,6 +43,10 @@ export const Toast = new (class Toast {
     }
 
     connectionError(message) {
+        if (!this.isEnabled()) {
+            return;
+        }
+
         if (useNetworkStore().connected !== false) {
             return;
         }
