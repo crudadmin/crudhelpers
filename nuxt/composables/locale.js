@@ -1,3 +1,3 @@
-export const __ = (key) => {
-    return useNuxtApp().$__(key);
+export const __ = function (key) {
+    return useNuxtApp().$__(...arguments);
 };
