@@ -4,18 +4,22 @@ import { useAjaxStore } from '../store/index.js';
 import { useResponse } from './helpers.js';
 
 export const Axios = new (class Axios {
-    setOptions(options = {}, $axiosOptions = {}) {
+    setOptions(options = {}, axiosOptions = {}) {
         this.options = {
             baseURL: options.baseURL || import.meta.env.VITE_APP_SERVER_URL,
             token: options.token,
             locale: options.locale,
             headers: options.headers,
-            ...$axiosOptions,
         };
+
+        this.axiosOptions = axiosOptions || {};
     }
 
     create() {
-        const $axios = axios.create(this.options);
+        const $axios = axios.create({
+            baseURL: this.options.baseURL,
+            ...this.axiosOptions,
+        });
 
         this.addInterceptors($axios);
 
@@ -26,23 +30,24 @@ export const Axios = new (class Axios {
     }
 
     buildHeaders() {
-        let headers = {};
+        let headers = {},
+            options = this.options || {};
 
         // Authorization header
-        const token = this.options.token ? this.options.token() : null;
+        const token = options.token ? options.token() : null;
         if (token) {
             headers['Authorization'] = 'Bearer ' + token;
         }
 
         // Locale header
-        let locale = this.options.locale ? this.options.locale() : null;
+        let locale = options.locale ? options.locale() : null;
         if (locale) {
             headers['app-locale'] = locale;
         }
 
         // Add headers
-        if (this.options.headers) {
-            headers = { ...headers, ...this.options.headers(headers) };
+        if (options.headers) {
+            headers = { ...headers, ...options.headers(headers) };
         }
 
         return headers;
