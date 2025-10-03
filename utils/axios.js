@@ -10,19 +10,19 @@ export const Axios = new (class Axios {
             token: options.token,
             locale: options.locale,
             headers: options.headers,
-        };
-
-        this.axios = axios.create({
-            baseURL: this.options.baseURL,
             ...$axiosOptions,
-        });
+        };
+    }
 
-        this.addInterceptors();
+    create() {
+        const $axios = axios.create(this.options);
+
+        this.addInterceptors($axios);
 
         // Request helpers ($get, $post, ...)
-        this.addCustomMethods();
+        this.addCustomMethods($axios);
 
-        return this.axios;
+        return $axios;
     }
 
     buildHeaders() {
@@ -48,8 +48,8 @@ export const Axios = new (class Axios {
         return headers;
     }
 
-    setLoading(state) {
-        let args = this.axios._onLoading;
+    setLoading($axios, state) {
+        let args = $axios._onLoading;
 
         if (!args || !args.length) {
             return;
@@ -71,10 +71,10 @@ export const Axios = new (class Axios {
         }
     }
 
-    addInterceptors() {
-        this.axios.interceptors.request.use(
+    addInterceptors($axios) {
+        $axios.interceptors.request.use(
             (successfulReq) => {
-                this.setLoading(true);
+                this.setLoading($axios, true);
 
                 //Push admin headers into each request
                 if (successfulReq.headers) {
@@ -94,23 +94,23 @@ export const Axios = new (class Axios {
             }
         );
 
-        this.axios.interceptors.response.use(
+        $axios.interceptors.response.use(
             (response) => {
                 //Toggle loading state
-                this.setLoading(false);
+                this.setLoading($axios, false);
 
                 return response;
             },
             (error) => {
                 //Toggle loading state
-                this.setLoading(false);
+                this.setLoading($axios, false);
 
                 return Promise.reject(error);
             }
         );
     }
 
-    addCustomMethods() {
+    addCustomMethods($axios) {
         for (let method of [
             'request',
             'delete',
@@ -121,64 +121,52 @@ export const Axios = new (class Axios {
             'put',
             'patch',
         ]) {
-            this.axios['$' + method] = async function () {
+            $axios['$' + method] = async function () {
                 return this[method]
                     .apply(this, arguments)
                     .then((res) => res && res.data);
             };
         }
 
-        this.axios['$getOnline'] = function (url, data, errorMessage) {
+        $axios['$getOnline'] = function (url, data, errorMessage) {
             Toast.connectionError(errorMessage);
 
             return this.$get(url, data);
         };
 
-        this.axios['$postOnline'] = function (
-            url,
-            data,
-            options,
-            errorMessage
-        ) {
+        $axios['$postOnline'] = function (url, data, options, errorMessage) {
             Toast.connectionError(errorMessage);
 
             return this.$post(url, data, options);
         };
 
-        this.axios['$deleteOnline'] = function (
-            url,
-            data,
-            options,
-            errorMessage
-        ) {
+        $axios['$deleteOnline'] = function (url, data, options, errorMessage) {
             Toast.connectionError(errorMessage);
 
             return this.$delete(url, data, options);
         };
 
-        this.axios['$getAsync'] = async (url, data, options) => {
-            return await this.asyncRequest('get', url, data, options);
+        $axios['$getAsync'] = async (url, data, options) => {
+            return await this.asyncRequest($axios, 'get', url, data, options);
         };
 
-        this.axios['$postAsync'] = async (url, data, options) => {
-            return await this.asyncRequest('post', url, data, options);
+        $axios['$postAsync'] = async (url, data, options) => {
+            return await this.asyncRequest($axios, 'post', url, data, options);
         };
 
-        this.axios['$deleteAsync'] = async (url, data, options) => {
-            return await this.asyncRequest('delete', url, data, options);
+        $axios['$deleteAsync'] = async (url, data, options) => {
+            // prettier-ignore
+            return await this.asyncRequest($axios, 'delete', url, data, options);
         };
 
-        this.axios['loading'] = function (
-            variableOrCallback,
-            variableKey = null
-        ) {
+        $axios['loading'] = function (variableOrCallback, variableKey = null) {
             this._onLoading = [variableOrCallback, variableKey];
 
             return this;
         };
     }
 
-    async asyncRequest(method, url, data, options) {
+    async asyncRequest($axios, method, url, data, options) {
         //Set key of request for redundancy
         if (typeof options == 'string') {
             options = { key: options };
@@ -205,7 +193,7 @@ export const Axios = new (class Axios {
         }
 
         try {
-            let response = await this.axios['$' + method](url, data);
+            let response = await $axios['$' + method](url, data);
 
             useResponse(response);
 

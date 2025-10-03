@@ -4,7 +4,7 @@ import { Axios } from './Axios.js';
 import { Response } from './Response.js';
 
 export const useAxios = () => {
-    return Axios.axios;
+    return Axios.create();
 };
 
 export const useResponse = (payload) => {
