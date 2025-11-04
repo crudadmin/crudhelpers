@@ -5,7 +5,7 @@ export const useLocaleStore = defineStore('locale', {
 
     state() {
         return {
-            locale: 'sk',
+            locale: null,
             languages: [],
             translations: null,
         };
