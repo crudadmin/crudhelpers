@@ -83,7 +83,12 @@ export default class Translator {
             return this._translates;
         }
 
-        return (this._translates =
-            typeof translates == 'function' ? translates() : translates);
+        if (typeof translates == 'function') {
+            translates = translates();
+        } else if (typeof translates == 'string') {
+            translates = JSON.parse(translates);
+        }
+
+        return (this._translates = translates);
     }
 }
