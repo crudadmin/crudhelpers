@@ -10,6 +10,7 @@ export const Axios = new (class Axios {
             token: options.token,
             locale: options.locale,
             headers: options.headers,
+            callback: options.callback,
         };
 
         this.axiosOptions = axiosOptions || {};
@@ -25,6 +26,11 @@ export const Axios = new (class Axios {
 
         // Request helpers ($get, $post, ...)
         this.addCustomMethods($axios);
+
+        // Axios callback mutator
+        if (this.options.callback) {
+            this.options.callback($axios);
+        }
 
         return $axios;
     }
