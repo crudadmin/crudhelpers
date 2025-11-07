@@ -29,6 +29,14 @@ export default class Translator {
         return this;
     }
 
+    setTranslates(_data) {
+        this.rawTranslates = _data;
+
+        const translates = this.getTranslates(this.rawTranslates);
+
+        this.getTranslator().loadTranslations(translates);
+    }
+
     async install(vueApp) {
         vueApp.use({
             install: async (Vue, options) => {

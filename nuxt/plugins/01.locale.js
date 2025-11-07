@@ -1,3 +1,4 @@
+import { watch } from 'vue';
 import { defineNuxtPlugin } from '#app';
 import Translator from '../../utils/Translator';
 
@@ -7,11 +8,24 @@ export default defineNuxtPlugin(async ({ vueApp, $pinia }) => {
     // And nuxt is using different store than classic vue apps.
     const localeStore = useLocaleStore($pinia);
 
-    let translator = new Translator(localeStore.translations);
+    let translator = new Translator();
 
     await translator.install(vueApp);
 
     const $translator = translator.getTranslator();
+
+    // When translations are set, we need to update the translator
+    watch(
+        () => localeStore.translations,
+        (newVal, oldVal) => {
+            if (!newVal) {
+                return;
+            }
+
+            translator.setTranslates(useLocaleStore().translations);
+        },
+        { immediate: true }
+    );
 
     return {
         provide: {
