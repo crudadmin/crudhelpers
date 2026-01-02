@@ -53,7 +53,8 @@ export const Response = new (class Response {
                 let isErrorCode = [4, 5].includes(parseInt((status + '')[0])), //All 400 + 500 error codes
                     obj = {
                         message: response.message || data.message,
-                        duration: isErrorCode ? 5000 : null,
+                        duration:
+                            data?.toast_duration || (isErrorCode ? 5000 : null),
                     };
 
                 if (isErrorCode || response instanceof Error) {
