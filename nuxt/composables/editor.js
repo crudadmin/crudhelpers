@@ -9,7 +9,7 @@ export const installEditor = async () => {
         } catch (e) {}
 
         // Boot editor with new token
-        bootEditor(token);
+        bootEditor(token, true);
 
         // Redirect to root, stripping away the query params
         window.location.href =
@@ -30,7 +30,12 @@ export const installEditor = async () => {
     }
 };
 
-const bootEditor = async (token) => {
+const bootEditor = async (token, active = false) => {
+    // Turn on editor
+    if (active == true) {
+        localStorage.setItem('ca_editor_state', active);
+    }
+
     const data = await loadConfiguration();
 
     window.CAEditorConfig.token = token;
