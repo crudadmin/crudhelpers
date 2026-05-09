@@ -7,9 +7,9 @@ export const useAxios = () => {
     return Axios.create();
 };
 
-export const useResponse = (payload) => {
+export const useResponse = (payload, options = {}) => {
     if (payload) {
-        return Response.get(payload);
+        return Response.get(payload, options);
     }
 
     return Response;

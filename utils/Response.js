@@ -11,7 +11,7 @@ export const Response = new (class Response {
         this.stores = stores;
     }
 
-    get(response) {
+    get(response, options = {}) {
         let isError = response instanceof Error;
 
         //If is error response
@@ -68,7 +68,7 @@ export const Response = new (class Response {
             else if (isError) {
                 console.error(response);
 
-                Toast.unknown();
+                Toast.unknown(options.message);
             }
         }
 
@@ -76,7 +76,7 @@ export const Response = new (class Response {
         else if (isError) {
             console.error(response);
 
-            Toast.unknown();
+            Toast.unknown(options.message);
         }
     }
 
