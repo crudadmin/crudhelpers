@@ -26,6 +26,16 @@ export const Modal = new (class Modal {
         return _.find(modals, { name });
     }
 
+    data(name, defaultValue = null) {
+        let data = ref(this.getData(name) || defaultValue);
+
+        this.onOpen(name, (modal) => {
+            data.value = this.getData(name);
+        });
+
+        return data;
+    }
+
     getData(name, missing = false) {
         return this.get(name, missing)?.callback;
     }
