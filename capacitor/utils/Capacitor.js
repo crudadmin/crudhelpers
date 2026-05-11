@@ -109,36 +109,46 @@ export class Capacitor {
     }
 
     setToastOpener() {
-        Toast.setOpener(async (options) => {
-            Mobile.waitTillKeyboardClose();
+        Toast.setOpener(
+            // Opener callback
+            async (options) => {
+                Mobile.waitTillKeyboardClose();
 
-            options =
-                typeof options == 'object' ? options : { message: options };
+                options =
+                    typeof options == 'object' ? options : { message: options };
 
-            let { message, duration, cssClass } = options;
+                let { message, duration, cssClass } = options;
 
-            duration = duration || 2500;
+                duration = duration || 2500;
 
-            const toast = await toastController.create({
-                message,
-                duration,
-                cssClass,
-                swipeGesture: 'vertical',
-            });
-
-            toast.present();
-
-            if (toast.shadowRoot) {
-                toast.shadowRoot.addEventListener('click', () => {
-                    if (options.click) {
-                        options.click();
-                    }
-
-                    if (toast) {
-                        toast.dismiss();
-                    }
+                const toast = await toastController.create({
+                    message,
+                    duration,
+                    cssClass,
+                    swipeGesture: 'vertical',
                 });
+
+                toast.present();
+
+                if (toast.shadowRoot) {
+                    toast.shadowRoot.addEventListener('click', () => {
+                        if (options.click) {
+                            options.click();
+                        }
+
+                        if (toast) {
+                            toast.dismiss();
+                        }
+                    });
+                }
+            },
+
+            // Check if toast is opened
+            () => {
+                return document.querySelectorAll('ion-toast').length > 0
+                    ? true
+                    : false;
             }
-        });
+        );
     }
 }

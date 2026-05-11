@@ -3,8 +3,12 @@ import { useNetworkStore } from '../store/networkStore.js';
 import _ from 'lodash';
 
 export const Toast = new (class Toast {
-    setOpener(opener) {
+    setOpener(opener, isOpened) {
+        // Set opener callback
         this.opener = opener;
+
+        // Set is Opened callback
+        this.isOpened = isOpened;
     }
 
     isEnabled() {
@@ -66,5 +70,15 @@ export const Toast = new (class Toast {
         this.error({ message });
 
         throw 'Connection for this action is required.';
+    }
+
+    async waitTillClosed() {
+        if (typeof this.isOpened !== 'function') {
+            return;
+        }
+
+        while (this.isOpened()) {
+            await useSleep(100);
+        }
     }
 })();
