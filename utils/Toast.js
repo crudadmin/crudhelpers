@@ -29,6 +29,12 @@ export const Toast = new (class Toast {
         this.open({ ...options, cssClass: '--error' });
     }
 
+    warning(options = {}) {
+        options = typeof options == 'object' ? options : { message: options };
+
+        this.open({ ...options, cssClass: '--warning' });
+    }
+
     success(options = {}) {
         options = typeof options == 'object' ? options : { message: options };
 
