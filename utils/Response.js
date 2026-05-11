@@ -57,7 +57,12 @@ export const Response = new (class Response {
                             data?.toast_duration || (isErrorCode ? 5000 : null),
                     };
 
-                if (isErrorCode || response instanceof Error) {
+                if (
+                    isErrorCode ||
+                    response instanceof Error ||
+                    response?.error === true ||
+                    response?.type === 'error'
+                ) {
                     Toast.error(obj);
                 } else {
                     Toast.open(obj);
