@@ -4,6 +4,8 @@ import { ref, watch, nextTick } from 'vue';
 export const Modal = new (class Modal {
     constructor() {
         this.modals = ref([]);
+
+        this.closed = ref([]);
     }
 
     show(name, callback) {
@@ -18,12 +20,14 @@ export const Modal = new (class Modal {
         return this.get(name) ? true : false;
     }
 
-    get(name) {
-        return _.find(this.modals.value, { name });
+    get(name, missing = false) {
+        const modals = missing ? this.closed.value : this.modals.value;
+
+        return _.find(modals, { name });
     }
 
-    getData(name) {
-        return this.get(name)?.callback;
+    getData(name, missing = false) {
+        return this.get(name, missing)?.callback;
     }
 
     close(name) {
@@ -33,7 +37,10 @@ export const Modal = new (class Modal {
         name = name || this.modals.value[this.modals.value.length - 1]?.name;
 
         if (this.isOpen(name)) {
-            _.remove(this.modals.value, { name });
+            let closed = _.remove(this.modals.value, { name });
+
+            // Keep currently closed modal at beggining of the array
+            this.closed.value = [...closed, ...this.closed.value].slice(0, 5);
         }
     }
 
@@ -54,7 +61,7 @@ export const Modal = new (class Modal {
 
     onClose(modal, callback) {
         this.onChange(modal, (state) => {
-            !state ? callback(this.getData(modal)) : null;
+            !state ? callback(this.getData(modal, true)) : null;
         });
     }
 
