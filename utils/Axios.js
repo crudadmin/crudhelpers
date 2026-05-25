@@ -11,6 +11,7 @@ export const Axios = new (class Axios {
             locale: options.locale,
             headers: options.headers,
             callback: options.callback,
+            unauthorized: options.unauthorized,
         };
 
         this.axiosOptions = axiosOptions || {};
@@ -115,6 +116,11 @@ export const Axios = new (class Axios {
             (error) => {
                 //Toggle loading state
                 this.setLoading($axios, false);
+
+                // On unauthorized error, call unauthorized callback
+                if (error.status === 401) {
+                    this.options.unauthorized?.();
+                }
 
                 return Promise.reject(error);
             }
