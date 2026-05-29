@@ -84,4 +84,8 @@ export const Modal = new (class Modal {
             this.open(...args);
         });
     };
+
+    closeAll = function () {
+        this.modals.value.forEach((m) => this.close(m.name));
+    };
 })();
