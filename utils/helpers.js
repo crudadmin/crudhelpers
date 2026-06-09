@@ -33,9 +33,11 @@ export const useSleep = (delay) =>
 export const useLazyClick = async (e, callback) => {
     let el = e.nodeName ? e : e.target;
 
-    //If clicked element is not button, try to find closest button
+    // If clicked element is not button, try to find closest button
+    // Because if ion-element is clicked, e.target may be different all the time.
+    // prettier-ignore
     if (['BUTTON'].includes(el.nodeName) == false) {
-        el = el.closest('ion-button, button, .icon-btn') || el;
+        el = el.closest('ion-button, ion-fab-button, ion-item, ion-card-content, button, .icon-btn') || el;
     }
 
     if (el.loading) {
