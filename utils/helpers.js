@@ -53,14 +53,12 @@ export const useLazyClick = async (e, callback) => {
         if (callback) {
             await callback(e);
         }
-    } catch (e) {
-        console.error(e);
+    } finally {
+        el.removeAttribute('disabled');
+        el.removeAttribute('lazy-click-loading');
+
+        el.loading = false;
     }
-
-    el.removeAttribute('disabled');
-    el.removeAttribute('lazy-click-loading');
-
-    el.loading = false;
 };
 
 export const useObjectToFormData = (obj, rootName, ignoreList) => {
