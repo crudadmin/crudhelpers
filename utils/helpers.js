@@ -35,7 +35,7 @@ export const useLazyClick = async (e, callback) => {
 
     //If clicked element is not button, try to find closest button
     if (['BUTTON'].includes(el.nodeName) == false) {
-        el = el.closest('button, .icon-btn') || el;
+        el = el.closest('ion-button, button, .icon-btn') || el;
     }
 
     if (el.loading) {
