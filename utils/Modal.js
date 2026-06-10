@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import { ref, watch, nextTick } from 'vue';
+import { useSleep } from './helpers.js';
 
 export const Modal = new (class Modal {
     constructor() {
@@ -40,7 +41,7 @@ export const Modal = new (class Modal {
         return this.get(name, missing)?.callback;
     }
 
-    close(name) {
+    async close(name) {
         // await useWaitTillKeyboardClose();
 
         //Close last opaned modal if no name has been given
@@ -52,6 +53,11 @@ export const Modal = new (class Modal {
             // Keep currently closed modal at beggining of the array
             this.closed.value = [...closed, ...this.closed.value].slice(0, 5);
         }
+
+        // Wait till modal is really closed.
+        // This is for double clicks on the same element.
+        // Becuase when loading actions finishes. And modal is being closed, it is able to click again becuase useLazyClick is done.
+        await useSleep(500);
     }
 
     onChange(modal, callback) {
