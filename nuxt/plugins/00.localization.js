@@ -3,6 +3,11 @@ import { defineNuxtPlugin, addRouteMiddleware, navigateTo } from '#app';
 import { installLocalizedRouter } from '../utils/LocalizeTarget.js';
 
 /**
+ * Internal route Nuxt renders the error page through.
+ */
+const ERROR_ROUTE = '/__nuxt_error';
+
+/**
  * Keeps the active language and the url in sync.
  *
  * The url prefix is the source of truth. Every language exists in the route
@@ -53,8 +58,29 @@ export default defineNuxtPlugin(({ $pinia }) => {
         return useLocaleFromDomain(url.host) || rememberedLocale();
     };
 
+    /**
+     * Path the visitor actually asked for.
+     *
+     * Nuxt renders the error page through an internal route and passes the
+     * original address along as a query parameter, so a 404 under /en would
+     * otherwise lose its language.
+     */
+    const requestPath = () => {
+        const url = useRequestURL();
+
+        if (url.pathname === ERROR_ROUTE) {
+            const original = url.searchParams.get('url');
+
+            if (original) {
+                return original.split('?')[0];
+            }
+        }
+
+        return url.pathname;
+    };
+
     const url = useRequestURL();
-    const urlLocale = useLocaleFromPath(url.pathname);
+    const urlLocale = useLocaleFromPath(requestPath());
 
     // This runs before the application's own plugins, so anything they fetch
     // on boot is already requested in the right language.
