@@ -112,8 +112,8 @@ export const installLocalizedRouter = (router, getLocale) => {
 
     const resolve = router.resolve.bind(router);
 
-    // Kept so useLocalePath can address a language other than the active one
-    // without the wrapper rewriting the target back.
+    // Kept so a target can be addressed in a language other than the active
+    // one without the wrapper rewriting it back.
     router.__crudResolve = resolve;
     router.__crudLocalized = true;
 

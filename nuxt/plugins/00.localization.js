@@ -1,6 +1,7 @@
 import { defineNuxtPlugin, addRouteMiddleware, navigateTo } from '#app';
 
 import { installLocalizedRouter } from '../utils/LocalizeTarget.js';
+import { resolveLocalePath } from '../composables/localization.js';
 
 /**
  * Internal route Nuxt renders the error page through.
@@ -121,19 +122,23 @@ export default defineNuxtPlugin(({ $pinia }) => {
             }
 
             // An unprefixed url is the default language. Send the visitor to
-            // their own language once, if they have one and it differs.
-            if (config.redirect === true && prefixed === null) {
+            // their own language once, if they have one and it differs. An
+            // address that matches no route has no counterpart to be sent to,
+            // and asking for one throws, so it is left to the error page.
+            if (config.redirect === true && prefixed === null && to.name) {
                 const preferred = preferredLocale();
 
                 if (preferred && preferred !== config.defaultLocale) {
-                    const target = useLocalePath(
+                    const target = resolveLocalePath(
+                        useRouter(),
                         {
                             name: to.name,
                             params: to.params,
                             query: to.query,
                             hash: to.hash,
                         },
-                        preferred
+                        preferred,
+                        config
                     );
 
                     if (target && target !== to.fullPath) {

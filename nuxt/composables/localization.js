@@ -99,24 +99,13 @@ export const useLocaleFromDomain = (host) => {
 /**
  * Build the path of a route in a given language.
  *
- * Accepts anything vue-router can resolve, so both useLocalePath('/about')
- * and useLocalePath({ name: 'projects-slug', params: { slug } }) work.
- */
-export const useLocalePath = (to, locale) => {
-    return resolveLocalePath(
-        useRouter(),
-        to,
-        locale || useCurrentLocale(),
-        useLocalizationConfig()
-    );
-};
-
-/**
- * The same, with everything it needs handed over instead of pulled from the
- * Nuxt context.
+ * The router already resolves into the active language on its own, so this is
+ * only for pointing at another one. Everything it needs is handed over rather
+ * than pulled from the Nuxt context, because a head, a watcher or any other
+ * callback that runs after setup has no context around it.
  *
- * A head, a watcher or any other callback that runs after setup has no context
- * around it, so it captures the router during setup and calls this.
+ * Accepts anything vue-router can resolve, so both a path and
+ * { name: 'projects-slug', params: { slug } } work.
  */
 export const resolveLocalePath = (router, to, locale, config) => {
     // The router localizes into the active language on its own, so addressing

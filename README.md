@@ -176,8 +176,8 @@ path translation, a hardcoded `/about` does not. Paths still work and are
 localized the same way, but they have to be written the way the default
 language spells them.
 
-`useLocalePath` is only needed to point at a language other than the active
-one, which is what the language switcher does through `useSwitchLocalePath`.
+Pointing at a language other than the active one is what the language
+switcher does, through `useSwitchLocalePath`.
 
 ### Composables
 
@@ -187,7 +187,6 @@ All auto-imported:
 | -------------------------------- | ------------------------------------------------ |
 | `useCurrentLocale()`             | active language slug                             |
 | `useLocales()`                   | every configured slug                            |
-| `useLocalePath(to, locale?)`     | path of a route in a language                    |
 | `useSwitchLocalePath(locale)`    | the current page in another language             |
 | `useSetLocale(locale, options?)` | switch language and navigate there               |
 | `useLocaleParams(params?)`       | route params of this page in the other languages |

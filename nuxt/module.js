@@ -2,12 +2,17 @@ import { join, isAbsolute } from 'node:path';
 
 import { defineNuxtModule } from '@nuxt/kit';
 
+const LOG_PREFIX = '[@crudadmin/helpers]';
+
 import {
     buildTranslatableRoutes,
     collectRoutePaths,
 } from './utils/CustomRouter.js';
 import {
+    countTranslations,
     fetchRouteTranslations,
+    filterRouteTranslations,
+    readTranslationCache,
     writeGettextSource,
     writeTranslationCache,
 } from './utils/RouteTranslations.js';
@@ -93,6 +98,37 @@ const resolveLocalization = async (options, nuxt) => {
             buildDir
         ),
     };
+};
+
+/**
+ * Path translations to build the routes with.
+ *
+ * A backend can answer without a single route path in it, for example when it
+ * has not scanned the generated file yet. That must not silently strip every
+ * translated url from the site, so the previous build's answer wins whenever
+ * the fresh one carries nothing.
+ */
+const resolveTranslations = async (localization, paths) => {
+    const fetched = filterRouteTranslations(
+        await fetchRouteTranslations(localization),
+        paths
+    );
+
+    const cached = filterRouteTranslations(
+        readTranslationCache(localization.cacheFile),
+        paths
+    );
+
+    if (countTranslations(fetched) === 0 && countTranslations(cached) > 0) {
+        // prettier-ignore
+        console.warn(`${LOG_PREFIX} the backend returned no translated route paths, keeping the ones from ${localization.cacheFile}.`);
+
+        return cached;
+    }
+
+    writeTranslationCache(localization.cacheFile, fetched);
+
+    return fetched;
 };
 
 export default defineNuxtModule({
@@ -220,24 +256,25 @@ export default defineNuxtModule({
         };
 
         if (localization.enabled === true) {
-            // Read the path translations before the routes are built, they
-            // decide what every localized path looks like.
-            if (localization.translateRoutes === true) {
-                localization.translations =
-                    await fetchRouteTranslations(localization);
-            }
+            let translationsRead = false;
 
-            nuxt.hook('pages:extend', (routes) => {
+            nuxt.hook('pages:extend', async (routes) => {
                 const paths = collectRoutePaths(routes);
 
-                // Offer the paths to the administration for translation, and
-                // remember what came back so a build survives an offline api.
+                // Offer the paths to the administration for translation. This
+                // has to happen before they are read back: a build wipes the
+                // build directory, and the backend drops from its catalog every
+                // string it can no longer find in the sources.
                 writeGettextSource(localization.gettextFile, paths);
 
-                if (Object.keys(localization.translations || {}).length > 0) {
-                    writeTranslationCache(
-                        localization.cacheFile,
-                        localization.translations,
+                if (
+                    localization.translateRoutes === true &&
+                    translationsRead === false
+                ) {
+                    translationsRead = true;
+
+                    localization.translations = await resolveTranslations(
+                        localization,
                         paths
                     );
                 }

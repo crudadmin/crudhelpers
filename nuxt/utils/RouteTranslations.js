@@ -92,15 +92,13 @@ export const readTranslationCache = (file) => {
 };
 
 /**
- * Keep only the paths that are actually routes, so the cache stays small and
- * readable enough to be committed.
+ * Reduce a catalog to the paths that are actually routes.
+ *
+ * Nothing else is of any use here, and it keeps the cache small and readable
+ * enough to be committed.
  */
-export const writeTranslationCache = (file, translations, paths) => {
-    if (!file) {
-        return;
-    }
-
-    const cache = {};
+export const filterRouteTranslations = (translations, paths) => {
+    const filtered = {};
 
     Object.keys(translations || {}).forEach((locale) => {
         const source = translations[locale] || {};
@@ -112,10 +110,31 @@ export const writeTranslationCache = (file, translations, paths) => {
             }
         });
 
-        cache[locale] = kept;
+        filtered[locale] = kept;
     });
 
-    writeFile(file, JSON.stringify(cache, null, 4) + '\n');
+    return filtered;
+};
+
+/**
+ * How many translated paths a catalog holds, across all languages.
+ */
+export const countTranslations = (translations) => {
+    return Object.values(translations || {}).reduce(
+        (total, locale) => total + Object.keys(locale || {}).length,
+        0
+    );
+};
+
+/**
+ * Remember the paths of this build for the next one.
+ */
+export const writeTranslationCache = (file, translations) => {
+    if (!file) {
+        return;
+    }
+
+    writeFile(file, JSON.stringify(translations, null, 4) + '\n');
 };
 
 /**
