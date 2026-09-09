@@ -103,9 +103,22 @@ export const useLocaleFromDomain = (host) => {
  * and useLocalePath({ name: 'projects-slug', params: { slug } }) work.
  */
 export const useLocalePath = (to, locale) => {
-    const config = useLocalizationConfig();
-    const router = useRouter();
+    return resolveLocalePath(
+        useRouter(),
+        to,
+        locale || useCurrentLocale(),
+        useLocalizationConfig()
+    );
+};
 
+/**
+ * The same, with everything it needs handed over instead of pulled from the
+ * Nuxt context.
+ *
+ * A head, a watcher or any other callback that runs after setup has no context
+ * around it, so it captures the router during setup and calls this.
+ */
+export const resolveLocalePath = (router, to, locale, config) => {
     // The router localizes into the active language on its own, so addressing
     // another language has to go around that wrapper.
     const resolve = router.__crudResolve || router.resolve.bind(router);
@@ -113,8 +126,6 @@ export const useLocalePath = (to, locale) => {
     if (config.enabled !== true) {
         return typeof to === 'string' ? to : resolve(to).href;
     }
-
-    locale = locale || useCurrentLocale();
 
     // A target addressed by name has to be localized before it is resolved,
     // because the base name itself is no longer in the route table.
@@ -178,17 +189,37 @@ export const useLocaleParams = (params) => {
  * The current page, in another language.
  */
 export const useSwitchLocalePath = (locale) => {
-    const route = useRoute();
-    const params = useLocaleParams().value || {};
+    return resolveSwitchLocalePath(
+        useRouter(),
+        useRoute(),
+        locale,
+        useLocalizationConfig(),
+        useLocaleParams().value
+    );
+};
 
-    return useLocalePath(
+/**
+ * The context free counterpart of useSwitchLocalePath().
+ */
+export const resolveSwitchLocalePath = (
+    router,
+    route,
+    locale,
+    config,
+    localeParams
+) => {
+    const params = localeParams || {};
+
+    return resolveLocalePath(
+        router,
         {
             name: route.name,
             params: { ...route.params, ...(params[locale] || {}) },
             query: route.query,
             hash: route.hash,
         },
-        locale
+        locale,
+        config
     );
 };
 

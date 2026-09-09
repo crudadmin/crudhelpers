@@ -160,6 +160,29 @@ export default defineNuxtModule({
             // False disables it.
             gettextFile: null,
         },
+
+        // Defaults every useSeo() call falls back to.
+        seo: {
+            // Absolute base of the canonical and og urls. The request origin
+            // is used when this is empty, which is wrong behind a proxy or on
+            // a preview domain, so production should always set it.
+            siteUrl: null,
+
+            // Shown by social networks next to the page title.
+            siteName: null,
+
+            // Fallback og:image, either a path or an absolute url. Pages may
+            // override it with their own.
+            image: null,
+
+            // Fallback title and description, for pages that set neither.
+            title: null,
+            description: null,
+
+            // summary_large_image whenever an image is known, summary
+            // otherwise. Only the former is configurable.
+            twitterCard: 'summary_large_image',
+        },
     },
 
     hooks: {},
@@ -169,6 +192,21 @@ export default defineNuxtModule({
             moduleOptions.localization,
             nuxt
         );
+
+        const seo = {
+            ...(moduleOptions.seo || {}),
+            siteUrl:
+                (moduleOptions.seo || {}).siteUrl ||
+                process.env.NUXT_PUBLIC_SITE_URL ||
+                null,
+        };
+
+        // Both, because only the app config is bundled into the client build.
+        // A runtime config a module writes reaches the server render and the
+        // payload, but the browser gets the empty shape the build started
+        // with, which silently drops the site name after hydration.
+        nuxt.options.runtimeConfig.public.crudSeo = seo;
+        nuxt.options.appConfig.crudSeo = seo;
 
         nuxt.options.runtimeConfig.public.crudLocalization = {
             enabled: localization.enabled === true,
