@@ -1,12 +1,15 @@
 import _ from 'lodash';
 
+// Matches this package's plugin directory. The installed package resolves to
+// @crudadmin/helpers, while a linked checkout resolves to its own directory
+// name, so both spellings have to be accepted.
+const PLUGIN_DIRECTORY = /(helpers|crudhelpers)\/nuxt\/plugins\//;
+
 const isPriorityPlugin = (plugin) => {
     let prefix = plugin.src.split('/').pop().substr(0, 3);
 
     // Check if plugin prefix starts with 2 numbers and dot (eg: 01., 02., etc...)
-    return (
-        plugin.src.includes('helpers/nuxt/plugins') && /^\d{2}\./.test(prefix)
-    );
+    return PLUGIN_DIRECTORY.test(plugin.src) && /^\d{2}\./.test(prefix);
 };
 
 // We need push pinia plugin at the beggining of the plugins array,

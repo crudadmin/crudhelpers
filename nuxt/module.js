@@ -1,20 +1,212 @@
+import { join, isAbsolute } from 'node:path';
+
 import { defineNuxtModule } from '@nuxt/kit';
 
-// import { buildTranslatableRoutes } from './utils/CustomRouter.js';
+import {
+    buildTranslatableRoutes,
+    collectRoutePaths,
+} from './utils/CustomRouter.js';
+import {
+    fetchRouteTranslations,
+    writeGettextSource,
+    writeTranslationCache,
+} from './utils/RouteTranslations.js';
 // import { addSitemap } from './utilities/initialize/sitemap.js';
 
 import { regorganizePlugins } from './utils/installer.js';
 
-export default defineNuxtModule({
-    // Default configuration options for your module
-    defaults: {},
-    hooks: {},
-    setup(moduleOptions, nuxt) {
-        // nuxt.hook('pages:extend', async (routes) => {
-        //     buildTranslatableRoutes(nuxt.options.buildDir, routes);
+/**
+ * Resolve a configured file against the project root.
+ */
+const resolveFile = (file, rootDir) => {
+    if (!file) {
+        return null;
+    }
 
-        //     return routes;
-        // });
+    return isAbsolute(file) ? file : join(rootDir, file);
+};
+
+/**
+ * Resolve the localization options into their final shape.
+ *
+ * The routes map may be given as a function, so an application can pull the
+ * translated paths from its backend at build time instead of hardcoding them.
+ */
+const resolveLocalization = async (options, nuxt) => {
+    const localization = { ...(options || {}) };
+
+    if (localization.enabled !== true) {
+        return { ...localization, enabled: false };
+    }
+
+    const locales = localization.locales || [];
+
+    if (locales.length === 0) {
+        // prettier-ignore
+        console.warn('[@crudadmin/helpers] localization.enabled is on, but no locales were given. Localized routes will not be built.');
+
+        return { ...localization, enabled: false };
+    }
+
+    if (typeof localization.routes === 'function') {
+        localization.routes = (await localization.routes(localization)) || {};
+    }
+
+    const rootDir = nuxt.options.rootDir;
+    const buildDir = nuxt.options.buildDir || rootDir;
+    const translateRoutes = localization.translateRoutes === true;
+
+    return {
+        ...localization,
+        locales,
+        defaultLocale: localization.defaultLocale || locales[0],
+        prefixDefault: localization.prefixDefault === true,
+        redirect: localization.redirect !== false,
+        domains:
+            localization.domains === false ? false : localization.domains || {},
+        domainTld: localization.domainTld !== false,
+        cookie: localization.cookie || 'locale',
+        routes: localization.routes || {},
+        translations: localization.translations || {},
+        translateRoutes,
+        apiUrl:
+            localization.apiUrl ||
+            process.env.VITE_APP_SERVER_URL ||
+            process.env.NUXT_PUBLIC_API_URL ||
+            null,
+        bootstrapPath:
+            localization.bootstrapPath || '/api/bootstrap?only=locale',
+        cacheFile: resolveFile(
+            localization.cacheFile === false
+                ? null
+                : localization.cacheFile || 'crudadmin.routes.json',
+            rootDir
+        ),
+        // Generated on every build, so it belongs in the build directory
+        // rather than the sources. Point admin.gettext_source_paths at it for
+        // the paths to show up in the administration.
+        gettextFile: resolveFile(
+            localization.gettextFile === false
+                ? null
+                : localization.gettextFile ||
+                      (translateRoutes ? 'crudadmin.routes.js' : null),
+            buildDir
+        ),
+    };
+};
+
+export default defineNuxtModule({
+    meta: {
+        name: '@crudadmin/helpers',
+        configKey: 'crudadmin',
+    },
+
+    // Default configuration options for your module
+    defaults: {
+        localization: {
+            // Turn the whole feature on. Off by default, so existing projects
+            // keep their untouched single language routes.
+            enabled: false,
+
+            // Language slugs the routes are built for. Required, because the
+            // routes are generated at build time while the languages
+            // themselves live in the database.
+            locales: [],
+
+            // Language served from the site root. Defaults to the first one.
+            defaultLocale: null,
+
+            // Give the default language a prefix as well, so nothing is served
+            // from the bare root. Mirrors localization_remove_default.
+            prefixDefault: false,
+
+            // Send an unprefixed url to the language of the domain, or to the
+            // language the visitor picked last.
+            redirect: true,
+
+            // Explicit hostname to language map, eg { 'example.com': 'en' }.
+            // Set to false to ignore the domain entirely.
+            domains: {},
+
+            // Also treat a matching top level domain as its language, so
+            // example.sk serves sk without any mapping.
+            domainTld: true,
+
+            // Cookie remembering the picked language.
+            cookie: 'locale',
+
+            // Translated paths, keyed by route name:
+            // { about: { sk: '/o-nas', en: '/about' } }
+            // May also be a function returning that object. Wins over the
+            // translations pulled from the backend.
+            routes: {},
+
+            // Read the path translations from the backend gettext catalog, so
+            // the urls are edited in the administration instead of here.
+            translateRoutes: false,
+
+            // Backend to read them from. Falls back to VITE_APP_SERVER_URL.
+            apiUrl: null,
+            bootstrapPath: '/api/bootstrap?only=locale',
+
+            // Last successful answer, used when the backend is unreachable
+            // during a build. Relative to the project root, false disables it.
+            cacheFile: 'crudadmin.routes.json',
+
+            // Generated list of route paths as gettext calls, so the CrudAdmin
+            // scanner offers them for translation. Relative to the Nuxt build
+            // directory, written only when translateRoutes is on. Add its
+            // absolute path to admin.gettext_source_paths on the backend.
+            // False disables it.
+            gettextFile: null,
+        },
+    },
+
+    hooks: {},
+
+    async setup(moduleOptions, nuxt) {
+        const localization = await resolveLocalization(
+            moduleOptions.localization,
+            nuxt
+        );
+
+        nuxt.options.runtimeConfig.public.crudLocalization = {
+            enabled: localization.enabled === true,
+            locales: localization.locales || [],
+            defaultLocale: localization.defaultLocale || null,
+            prefixDefault: localization.prefixDefault === true,
+            redirect: localization.redirect === true,
+            domains: localization.domains,
+            domainTld: localization.domainTld !== false,
+            cookie: localization.cookie || 'locale',
+        };
+
+        if (localization.enabled === true) {
+            // Read the path translations before the routes are built, they
+            // decide what every localized path looks like.
+            if (localization.translateRoutes === true) {
+                localization.translations =
+                    await fetchRouteTranslations(localization);
+            }
+
+            nuxt.hook('pages:extend', (routes) => {
+                const paths = collectRoutePaths(routes);
+
+                // Offer the paths to the administration for translation, and
+                // remember what came back so a build survives an offline api.
+                writeGettextSource(localization.gettextFile, paths);
+
+                if (Object.keys(localization.translations || {}).length > 0) {
+                    writeTranslationCache(
+                        localization.cacheFile,
+                        localization.translations,
+                        paths
+                    );
+                }
+
+                buildTranslatableRoutes(routes, localization);
+            });
+        }
 
         nuxt.hook('app:resolve', async (nuxt) => {
             nuxt.plugins = regorganizePlugins(nuxt.plugins);
