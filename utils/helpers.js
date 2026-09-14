@@ -101,6 +101,35 @@ export const useObjectToFormData = (obj, rootName, ignoreList) => {
     return formData;
 };
 
+/**
+ * Is version `a` newer than `b`? Compares dotted numeric versions segment by segment,
+ * so 3.0.10 correctly counts as newer than 3.0.9. Non-numeric or missing input -> false.
+ */
+export const useIsVersionNewer = (a, b) => {
+    if (!a || !b) {
+        return false;
+    }
+
+    const parse = (v) =>
+        String(v)
+            .split('.')
+            .map((n) => parseInt(n, 10) || 0);
+
+    const left = parse(a);
+    const right = parse(b);
+    const length = Math.max(left.length, right.length);
+
+    for (let i = 0; i < length; i++) {
+        const diff = (left[i] || 0) - (right[i] || 0);
+
+        if (diff !== 0) {
+            return diff > 0;
+        }
+    }
+
+    return false;
+};
+
 export const AutoImportPreset = (preset) => {
     return {
         '@crudadmin/helpers': Object.keys(StoresPreset),
