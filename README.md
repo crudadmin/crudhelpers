@@ -11,6 +11,117 @@ export default defineNuxtConfig({
 });
 ```
 
+## Modals and toasts
+
+`Modal` and `Toast` are shared by the Ionic apps and the CrudAdmin administration.
+They keep the state only, the application gives them the look. The
+`@crudadmin/helpers/modal` entry depends on Vue alone.
+
+```js
+import { Modal, Toast, ModalRenderer, ToastRenderer } from '@crudadmin/helpers/modal';
+```
+
+### Opening
+
+```js
+// by name, the component is placed in the app template or registered
+Modal.open('chat-thread-delete', { thread });
+
+// a component, mounted by <ModalRenderer />
+const modal = Modal.open(EditRow, { row }, { title: 'Edit', class: '--wide' });
+
+// messages, rendered by the default component
+Modal.success('Saved.');
+Modal.info({ title: 'Info', message: '...' });
+Modal.warning({ message: '...', success: () => {} });
+Modal.danger(); // default title and text
+Modal.message(type, options); // type from a server response, error means danger
+
+if (await Modal.confirm({ title: 'Delete?', message: 'This cannot be undone.' })) {
+    // confirmed
+}
+
+// the second argument are the options of the opening itself
+Modal.confirm({ title: 'Delete?' }, { replace: true }); // closes the modal below it
+Modal.confirm({ title: 'Delete?' }, { replaceAll: true }); // closes every opened modal
+```
+
+Message options: `title`, `text` (or `message`), `type`, `success`, `cancel`,
+`confirmText`, `cancelText`, `actions`, and anything else ends in
+`modal.options` (`class`, `key`, ...). Every preset takes opening options as its
+second argument: `replace` closes the modal below it, `replaceAll` closes every
+opened modal, the rest joins `modal.options`. `Modal.open()` takes them too.
+Returning `false` from `success`, `cancel` or an action keeps the modal opened.
+
+Every opening is a separate entry with its own `id`, the same name or component
+can be opened more times at once.
+
+### The entry
+
+```js
+{
+    id, name, component, props, data,
+    message: { type, title, text }, // messages only
+    actions: [{ type, name, class, callback, enter, close }],
+    options: { class, key, ... },
+    state: { visible, openedAt, closedAt },
+    result, // Promise of { action, value }
+    close(value, action),
+}
+```
+
+`action` is `success`, `cancel`, `close` (X, escape, backdrop) or the type of a
+custom action.
+
+### Reading and closing
+
+Every method accepts an entry, an id or a name. A name means the last opened
+modal with that name.
+
+| method | |
+| --- | --- |
+| `isOpen(target)`, `isActive(target)` | opened / on top |
+| `get(target, fromClosed)`, `getData(target, fromClosed)` | entry / its data |
+| `data(name, default)` | ref refreshed on every opening |
+| `close(target?, value, action)` | without a target closes the top modal |
+| `runAction(target, action)` | runs an action and closes unless it returns `false` |
+| `replace(...)`, `replaceAll(...)`, `closeAll()` | both take the arguments of `open()`; a preset replaces through its own `{ replace: true }` or `{ replaceAll: true }` |
+| `onOpen`, `onClose`, `onChange(target, callback)` | `onOpen` of an entry which is already open runs on the next tick |
+
+### Setup
+
+```js
+Modal.configure({
+    closeDelay: 500, // close() waits this long, against double clicks
+    unmountDelay: 800, // a closed modal stays mounted for its leave animation
+    labels: { close: () => __('Zatvoriť'), confirm: () => __('Potvrdiť') },
+    titles: { success: () => __('Informácia'), danger: () => __('Upozornenie') },
+    texts: { danger: () => __('Nastala nečakaná chyba.') },
+    hooks: { closing(entry) {}, unmounted(entry) {} },
+});
+
+Modal.setDefaultComponent(MessageModal); // messages, and components without a modal prop
+Modal.register({ 'modal-confirm': ConfirmModal }); // names rendered by <ModalRenderer />
+```
+
+Place `<ModalRenderer />` once in the app. A component declaring a `modal` prop
+renders the whole modal and gets the entry in it; any other component is put in
+the default slot of the default component. Names that are not registered are
+left to the app template, which binds them to `Modal.isOpen(name)`.
+
+### Toasts
+
+```js
+Toast.success('Saved.');
+Toast.error({ title: 'Error', message: '...' });
+Toast.open({ type: 'warning', message: '...', duration: 10000 });
+```
+
+Ionic apps hand toasts to `toastController` through `Toast.setOpener()`. Without
+an opener they go to `Toast.toasts` and are rendered by `<ToastRenderer />` with
+the component given to `Toast.setComponent()`, which receives the entry in the
+`toast` prop.
+
 ## Localization by url slugs
 
 Off by default. Turn it on and every page gets one route per language:

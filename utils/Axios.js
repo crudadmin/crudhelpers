@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { Toast } from './Toast.js';
-import { useAjaxStore } from '../store/index.js';
+import { useAjaxStore, useNetworkStore } from '../store/index.js';
 import { useResponse } from './helpers.js';
+
+// Connection errors are reported only when the network store knows the device is offline
+Toast.setConnectionResolver(() => useNetworkStore().connected);
 
 export const Axios = new (class Axios {
     setOptions(options = {}, axiosOptions = {}) {
