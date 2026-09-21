@@ -1,4 +1,5 @@
 import $GettextTranslator from 'gettext-translator';
+import { ref } from 'vue';
 
 //Nuxt 3 loader fix
 const GettextTranslator = $GettextTranslator.default || $GettextTranslator;
@@ -6,6 +7,7 @@ const GettextTranslator = $GettextTranslator.default || $GettextTranslator;
 export default class Translator {
     constructor(rawTranslates) {
         this.rawTranslates = rawTranslates;
+        this.revision = ref(0);
 
         this.gettextSelectors = [
             '__',
@@ -29,12 +31,19 @@ export default class Translator {
         return this;
     }
 
-    setTranslates(_data) {
+    setTranslates(_data, { replace = false } = {}) {
         this.rawTranslates = _data;
+        this._translates = null;
 
         const translates = this.getTranslates(this.rawTranslates);
 
-        this.getTranslator().loadTranslations(translates);
+        if (replace) {
+            this._translator = new GettextTranslator(translates);
+        } else {
+            this.getTranslator().loadTranslations(translates);
+        }
+
+        this.revision.value++;
     }
 
     async install(vueApp) {
@@ -72,6 +81,9 @@ export default class Translator {
     }
 
     getTranslator(translates) {
+        // Vue consumers must update when the installed catalog changes.
+        this.revision.value;
+
         translates = translates || this.rawTranslates;
 
         if (this._translator) {

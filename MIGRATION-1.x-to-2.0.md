@@ -54,3 +54,9 @@
   the same for a modal opened by name or by component.
 
 See the README for the full API.
+
+## Vue translations
+
+- Install `CrudadminVue` after Pinia. It registers the shared `Translator` and follows `useLocaleStore().translations`, including catalogs arriving after mount.
+- Catalog updates through `CrudadminVue` replace previous messages; resetting the locale store clears translations. Global helpers remain `__` and `n__`; Vue components also receive the context/plural helpers.
+- `Translator.setTranslates(data)` now clears its parsed-input cache before applying the new catalog. Pass `{ replace: true }` as the second argument to discard previous catalogs; the default continues merging into the existing gettext instance.
