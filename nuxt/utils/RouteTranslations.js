@@ -141,7 +141,7 @@ export const writeTranslationCache = (file, translations) => {
  * Write the route paths out as gettext calls.
  *
  * Nothing imports this file. It exists so the CrudAdmin gettext scanner, which
- * reads the paths in admin.gettext_source_paths, finds the route paths and
+ * reads the paths in admin.gettext.source_paths, finds the route paths and
  * offers them for translation in the administration.
  */
 export const writeGettextSource = (file, paths) => {

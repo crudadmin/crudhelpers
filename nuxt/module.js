@@ -88,7 +88,7 @@ const resolveLocalization = async (options, nuxt) => {
             rootDir
         ),
         // Generated on every build, so it belongs in the build directory
-        // rather than the sources. Point admin.gettext_source_paths at it for
+        // rather than the sources. Point admin.gettext.source_paths at it for
         // the paths to show up in the administration.
         gettextFile: resolveFile(
             localization.gettextFile === false
@@ -192,7 +192,7 @@ export default defineNuxtModule({
             // Generated list of route paths as gettext calls, so the CrudAdmin
             // scanner offers them for translation. Relative to the Nuxt build
             // directory, written only when translateRoutes is on. Add its
-            // absolute path to admin.gettext_source_paths on the backend.
+            // absolute path to admin.gettext.source_paths on the backend.
             // False disables it.
             gettextFile: null,
         },
