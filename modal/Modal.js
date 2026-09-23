@@ -231,6 +231,10 @@ export class ModalManager {
 
         options = rest;
 
+        //A modal opened with a component is known by the name that component declares, so it
+        //can be found, closed and remembered without the opening having to name it again
+        name = name ?? this.componentName(component);
+
         // Opened in place of the modal below it, or of every opened modal
         if (replaceAll) {
             this.closeAll();
@@ -293,6 +297,11 @@ export class ModalManager {
         }
 
         return list.find((entry) => entry.id === target) || list.find((entry) => entry.name === target);
+    }
+
+    // name of <script setup> components lands in __name, an options component names itself in name
+    componentName(component) {
+        return component?.name || component?.__name || null;
     }
 
     // The last opened modal, or nothing when none is open
