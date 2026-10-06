@@ -212,5 +212,8 @@ const startBrowserNetwork = (nuxtApp) => {
     window.addEventListener('online', () => network.setConnected(true, true));
     window.addEventListener('offline', () => network.setConnected(false));
 
+    // Refresh again when the tab returns from the background
+    network.listenForResume();
+
     network.setConnected(navigator.onLine !== false);
 };

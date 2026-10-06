@@ -31,7 +31,7 @@ export default defineNuxtConfig({
             only: [], // sections asked for on boot, empty = all
             ssr: true, // fetch on the server when the app renders there
             blocking: false, // SPA: wait for the bootstrap before mounting
-            refresh: true, // browser: refresh on reconnect and every refreshSeconds
+            refresh: true, // browser: refresh on reconnect, on return to the tab and every refreshSeconds
             refreshSeconds: 600, // backendEnv.APP_REFRESH_SECONDS wins
         },
         auth: {
@@ -63,6 +63,19 @@ export default defineNuxtConfig({
 | client after SSR | nothing is fetched again, `crudadmin:bootstrap` runs with `hydrated: true` |
 | client SPA | the bootstrap is fetched in `app:created`, then the refresher starts |
 | plugin `04.capacitor.client` | `new Capacitor({ user, refresh, refreshSeconds }).ready()` instead of the browser refresher |
+
+### When the bootstrap refreshes
+
+`Network` (browser) and `Capacitor` (native app, with or without the Nuxt layer) call
+`refresh()` = `useAppStore().refreshApp()`:
+
+- on start when online, on reconnect (and then sends the queued offline requests again),
+- when the app or the tab returns to the foreground (`visibilitychange` and the `resume`
+  event Capacitor fires on the `document`, one refresh per return),
+- every `refreshSeconds` (`backendEnv.APP_REFRESH_SECONDS` wins).
+
+A refresh is skipped while the last successful one (`networkStore.lastUpdateTime`, set when
+`refreshApp()` resolves `true`) is younger than `refreshSeconds`.
 
 The bootstrap is fetched in `app:created`, after every plugin, so the stores
 and headers registered by the plugins of other layers (eshop `10`-`19`) and of

@@ -65,6 +65,9 @@ export class Capacitor {
         // How ofthen which method should be called
         this.network.refresh(refresh, refreshSeconds);
 
+        // Refresh again when the app returns from the background
+        this.network.listenForResume();
+
         // Listen for capacitor network status change
         (async () => {
             try {

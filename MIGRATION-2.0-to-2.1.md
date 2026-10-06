@@ -35,6 +35,12 @@ own boot plugin, `appStore` and `authStore`. Everything new is opt-in through
   (still `/api/bootstrap?only=locale` by default), `localization.apiUrl` falls
   back to `bootstrap.baseURL` before `VITE_APP_SERVER_URL`.
 - `Network`: the default refresh interval is 600 s, the comment said 5 minutes.
+- **Refresh on return to the app.** `Network.listenForResume()` refreshes the bootstrap when
+  a native app or a browser tab comes back to the foreground; `Capacitor` and the browser
+  refresher of the layer turn it on. Timers are paused in the background, so before the data
+  waited for the rest of the interval. A refresh younger than `refreshSeconds` is still
+  skipped, so switching apps for a moment sends no request. Apps calling `refreshApp()`
+  themselves on resume (`@capacitor/app` `appStateChange`) can drop that listener.
 
 ## New
 

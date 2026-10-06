@@ -92,3 +92,11 @@ stores declare `persist` for the web build.
   bootstrap runs once (app:created reuses the started promise), the browser refresher starts once.
 - Imports `@crudadmin/helpers/nuxt/stores` and `/nuxt/composables` resolve to the same module
   instances as the auto-imports (one `app` store per request).
+
+## 6. 10. 2026
+
+- `Network.listenForResume()`: `visibilitychange` to visible and `document` `resume` refresh
+  once (debounced) when the last refresh is older than `refreshSeconds`; nothing is fetched
+  when it is fresh, the timer is planned for the rest; hidden state and offline do nothing;
+  a second `Network` replaces the listener of the first one (`Capacitor` booted again).
+- Real devices: iOS and Android return from background fire the refresh once.

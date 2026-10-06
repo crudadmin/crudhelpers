@@ -42,6 +42,56 @@ export class Network {
     }
 
     /*
+     * Refresh when the app comes back to the foreground. Timers are paused while a
+     * native app or a browser tab is in the background, so the periodic refresh would
+     * run only after the rest of the interval. initializeRefresher() still skips the
+     * request when the last refresh is younger than the refresh interval, so quickly
+     * switching apps sends nothing.
+     *
+     * Only one network listens at a time: a newer one (Capacitor booted again)
+     * replaces the listener of the previous one.
+     */
+    listenForResume() {
+        if (typeof document === 'undefined') {
+            return this;
+        }
+
+        Network.resumeListener?.stop();
+
+        let debounce = null;
+
+        // visibilitychange and the cordova compatible `resume` event of Capacitor may
+        // both fire for one return to the app
+        const onResume = () => {
+            if (document.visibilityState === 'hidden') {
+                return;
+            }
+
+            clearTimeout(debounce);
+
+            debounce = setTimeout(() => {
+                if (this.connected) {
+                    this.initializeRefresher();
+                }
+            }, 300);
+        };
+
+        document.addEventListener('visibilitychange', onResume);
+        document.addEventListener('resume', onResume);
+
+        Network.resumeListener = {
+            stop() {
+                clearTimeout(debounce);
+
+                document.removeEventListener('visibilitychange', onResume);
+                document.removeEventListener('resume', onResume);
+            },
+        };
+
+        return this;
+    }
+
+    /*
      * Returns how often app should reload all data
      */
     getRefreshTimeout() {
