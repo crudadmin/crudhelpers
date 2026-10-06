@@ -6,7 +6,9 @@ import moment from 'moment';
 import _ from 'lodash';
 
 const nextTryAt = (seconds) => {
-    return moment().add(seconds, seconds).format('Y-MM-DD HH:mm:ss');
+    // The unit has to be given by name, moment().add(60, 60) adds nothing and
+    // a failed request was retried by the 2 s loop of Network right away.
+    return moment().add(seconds, 'seconds').format('Y-MM-DD HH:mm:ss');
 };
 
 const isSame = (request, oldRequest) => {

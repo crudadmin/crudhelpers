@@ -1,6 +1,12 @@
 import { join, isAbsolute } from 'node:path';
 
-import { defineNuxtModule } from '@nuxt/kit';
+import {
+    addImports,
+    addPlugin,
+    addTemplate,
+    createResolver,
+    defineNuxtModule,
+} from '@nuxt/kit';
 
 const LOG_PREFIX = '[@crudadmin/helpers]';
 
@@ -37,7 +43,7 @@ const resolveFile = (file, rootDir) => {
  * The routes map may be given as a function, so an application can pull the
  * translated paths from its backend at build time instead of hardcoding them.
  */
-const resolveLocalization = async (options, nuxt) => {
+const resolveLocalization = async (options, nuxt, bootstrap = {}) => {
     const localization = { ...(options || {}) };
 
     if (localization.enabled !== true) {
@@ -76,11 +82,17 @@ const resolveLocalization = async (options, nuxt) => {
         translateRoutes,
         apiUrl:
             localization.apiUrl ||
+            bootstrap.baseURL ||
             process.env.VITE_APP_SERVER_URL ||
             process.env.NUXT_PUBLIC_API_URL ||
             null,
+        // The catalog comes from the same bootstrap the app boots from (O8),
+        // so a project configures its path once, in crudadmin.bootstrap.
         bootstrapPath:
-            localization.bootstrapPath || '/api/bootstrap?only=locale',
+            localization.bootstrapPath ||
+            '/' +
+                String(bootstrap.path || 'api/bootstrap').replace(/^\/+/, '') +
+                '?only=locale',
         cacheFile: resolveFile(
             localization.cacheFile === false
                 ? null
@@ -129,6 +141,109 @@ const resolveTranslations = async (localization, paths) => {
     writeTranslationCache(localization.cacheFile, fetched);
 
     return fetched;
+};
+
+/**
+ * Plugin directories of every layer but the project itself. Their numbered
+ * plugins (eshop 10-19) are ordered together with the ones of helpers.
+ */
+const layerPluginDirs = (nuxt) => {
+    return (nuxt.options._layers || [])
+        .filter((layer) => layer.config?.rootDir !== nuxt.options.rootDir)
+        .map((layer) =>
+            join(
+                layer.config.srcDir || layer.config.rootDir,
+                layer.config.dir?.plugins || 'plugins'
+            )
+        );
+};
+
+/**
+ * Auto-imports, stores and plugins of the app boot.
+ *
+ * Every auto-import gets priority -1, so a project (or a layer) exporting
+ * the same name wins without a "Duplicated imports" warning. That keeps
+ * projects with their own useAppStore, useAuthStore, useBackendEnv or a
+ * re-export of @crudadmin/helpers/helpers working unchanged, and is how a
+ * project replaces a store with its extended definition.
+ */
+const registerAppRuntime = (nuxt, resolve, { bootstrap, auth, platform, capacitor }) => {
+    const ssr = nuxt.options.ssr !== false;
+
+    // Build time options for the runtime files. Paths and switches only,
+    // nothing secret ends up in the bundle.
+    addTemplate({
+        filename: 'crudadmin/options.mjs',
+        write: true,
+        getContents: () =>
+            'export default ' +
+            JSON.stringify({ ssr, bootstrap, auth, platform, capacitor }, null, 4) +
+            ';\n',
+    });
+
+    // Imported statically only when asked for, so other projects never need
+    // the package installed.
+    addTemplate({
+        filename: 'crudadmin/preferences.mjs',
+        write: true,
+        getContents: () =>
+            auth.storage === 'preferences'
+                ? "export { Preferences } from '@capacitor/preferences';\n"
+                : 'export const Preferences = null;\n',
+    });
+
+    nuxt.options.runtimeConfig.public.crudBootstrap = {
+        baseURL:
+            bootstrap.baseURL ||
+            process.env.VITE_APP_SERVER_URL ||
+            process.env.NUXT_PUBLIC_API_URL ||
+            null,
+    };
+
+    const imports = (names, from) =>
+        names.map((name) => ({ name, from, priority: -1 }));
+
+    addImports([
+        ...imports(
+            [
+                'useAjaxStore',
+                'useLocaleStore',
+                'useMobileStore',
+                'useNetworkStore',
+                'useOtpStore',
+            ],
+            resolve('../store/index.js')
+        ),
+        ...imports(
+            [
+                'useAxios',
+                'useResponse',
+                'generateUuid',
+                'useSleep',
+                'useLazyClick',
+                'useObjectToFormData',
+                'useIsVersionNewer',
+            ],
+            resolve('../utils/helpers.js')
+        ),
+        ...imports(['useAppStore', 'useAuthStore'], resolve('./runtime/stores.js')),
+        ...imports(
+            ['useBootstrap', 'useBackendEnv', 'usePlatformHeaders', 'usePlatform'],
+            resolve('./runtime/composables/app.js')
+        ),
+        ...imports(['useAuth'], resolve('./runtime/composables/auth.js')),
+    ]);
+
+    if (bootstrap.enabled === true) {
+        addPlugin({ src: resolve('./runtime/plugins/03.bootstrap.js') });
+    }
+
+    if (capacitor.enabled === true) {
+        addPlugin({
+            src: resolve('./runtime/plugins/04.capacitor.client.js'),
+            mode: 'client',
+        });
+    }
 };
 
 export default defineNuxtModule({
@@ -181,9 +296,12 @@ export default defineNuxtModule({
             // the urls are edited in the administration instead of here.
             translateRoutes: false,
 
-            // Backend to read them from. Falls back to VITE_APP_SERVER_URL.
+            // Backend to read them from. Falls back to bootstrap.baseURL and
+            // VITE_APP_SERVER_URL.
             apiUrl: null,
-            bootstrapPath: '/api/bootstrap?only=locale',
+
+            // Defaults to /<bootstrap.path>?only=locale
+            bootstrapPath: null,
 
             // Last successful answer, used when the backend is unreachable
             // during a build. Relative to the project root, false disables it.
@@ -195,6 +313,88 @@ export default defineNuxtModule({
             // absolute path to admin.gettext.source_paths on the backend.
             // False disables it.
             gettextFile: null,
+        },
+
+        // Boot of the app: axios defaults, auth token, the bootstrap request
+        // and its refresh (plugin 03.bootstrap). Off by default, so projects
+        // with their own boot plugin and app/auth stores keep working; the
+        // eshop layer turns it on.
+        bootstrap: {
+            enabled: false,
+
+            // Bootstrap endpoint, relative to baseURL. Autoskola style apps
+            // point it at their own request, eg. api/bootstrap/autosaurus.
+            path: 'api/bootstrap',
+
+            // Backend url. Falls back to runtime config
+            // public.crudBootstrap.baseURL, then VITE_APP_SERVER_URL.
+            baseURL: null,
+
+            // Sections asked for on boot, empty asks for all. Layers add
+            // theirs at run time through useBootstrap().addSections(), which
+            // only matters when this is not empty.
+            only: [],
+
+            // Fetch on the server when the app renders there, so the stores
+            // reach the client with the payload. false leaves it to the client.
+            ssr: true,
+
+            // In the browser (SPA) wait for the bootstrap before the app
+            // mounts. Off: the app mounts and appStore.booted tells when the
+            // data are there, which is what an offline capable app wants.
+            blocking: false,
+
+            // Refresh on reconnect and every refreshSeconds in the browser.
+            // backendEnv.APP_REFRESH_SECONDS of the backend wins.
+            refresh: true,
+            refreshSeconds: 600,
+        },
+
+        // Client authentication against the PHP crudadmin/helpers auth routes.
+        // Wired by the bootstrap plugin, used through useAuth().
+        auth: {
+            // auto: cookie on the web build (the server has to see it to
+            // render the logged in state), localStorage in the SPA build.
+            // cookie | local | preferences (Capacitor Preferences) | false.
+            storage: 'auto',
+
+            // The cookie of the web build. secure defaults to on outside dev.
+            cookie: {
+                name: 'auth_token',
+                maxAge: 60 * 60 * 24 * 365,
+                sameSite: 'lax',
+                secure: null,
+            },
+
+            // A 401 of any other than the auth routes forgets the user.
+            logoutOnUnauthorized: true,
+
+            // Backend paths, relative to the bootstrap baseURL. login, logout
+            // and user are the AdminAuth routes of PHP helpers. register is
+            // the registration endpoint, which also works without OTP. The
+            // password routes are not in PHP helpers yet, override them.
+            routes: {
+                login: 'api/auth/login',
+                logout: 'api/auth/logout',
+                register: 'api/auth/register/otp-verify',
+                user: 'api/user',
+                passwordForgot: 'api/auth/password/forgot',
+                passwordReset: 'api/auth/password/reset',
+            },
+        },
+
+        // app-type header (O48), for more apps on one API (customer,
+        // courier). version overrides the version read from the native app.
+        platform: {
+            type: null,
+            version: null,
+        },
+
+        // Native app boot through @crudadmin/helpers/capacitor (network,
+        // keyboard, toast opener). Needs @ionic/vue, @capacitor/network and
+        // @capacitor/keyboard, so it is off unless asked for.
+        capacitor: {
+            enabled: false,
         },
 
         // Defaults every useSeo() call falls back to.
@@ -224,10 +424,29 @@ export default defineNuxtModule({
     hooks: {},
 
     async setup(moduleOptions, nuxt) {
+        const { resolve } = createResolver(import.meta.url);
+
+        const bootstrap = { ...(moduleOptions.bootstrap || {}) };
+        const auth = {
+            ...(moduleOptions.auth || {}),
+            cookie: { ...((moduleOptions.auth || {}).cookie || {}) },
+            routes: { ...((moduleOptions.auth || {}).routes || {}) },
+        };
+        const platform = { ...(moduleOptions.platform || {}) };
+        const capacitor = { ...(moduleOptions.capacitor || {}) };
+
         const localization = await resolveLocalization(
             moduleOptions.localization,
-            nuxt
+            nuxt,
+            bootstrap
         );
+
+        registerAppRuntime(nuxt, resolve, {
+            bootstrap,
+            auth,
+            platform,
+            capacitor,
+        });
 
         const seo = {
             ...(moduleOptions.seo || {}),
@@ -283,8 +502,8 @@ export default defineNuxtModule({
             });
         }
 
-        nuxt.hook('app:resolve', async (nuxt) => {
-            nuxt.plugins = regorganizePlugins(nuxt.plugins);
+        nuxt.hook('app:resolve', async (app) => {
+            app.plugins = regorganizePlugins(app.plugins, layerPluginDirs(nuxt));
         });
     },
 });

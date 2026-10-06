@@ -3,8 +3,12 @@ import * as StoresPreset from '../store/index.js';
 import { Axios } from './Axios.js';
 import { Response } from './Response.js';
 
-export const useAxios = () => {
-    return Axios.create();
+/**
+ * Axios instance with the helpers interceptors. On a Nuxt server pass the
+ * nuxtApp when calling it after an await, see Axios.create().
+ */
+export const useAxios = (scope) => {
+    return Axios.create(scope);
 };
 
 export const useResponse = (payload, options = {}) => {

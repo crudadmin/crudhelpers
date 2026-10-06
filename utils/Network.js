@@ -4,7 +4,8 @@ import { useAxios } from './helpers.js';
 import _ from 'lodash';
 import moment from 'moment';
 
-const defaultTimeoutSeconds = 600; //5 minutes
+// How often the app data are refreshed by default, in seconds (10 minutes)
+const defaultTimeoutSeconds = 600;
 
 export class Network {
     constructor({ user }) {
@@ -35,7 +36,7 @@ export class Network {
         }
     }
 
-    refresh(callback, timeoutSeconds = 600) {
+    refresh(callback, timeoutSeconds = defaultTimeoutSeconds) {
         this.refresher.callback = callback;
         this.refresher.timeoutSeconds = timeoutSeconds;
     }

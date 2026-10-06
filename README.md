@@ -7,9 +7,171 @@ url based localization.
 ```js
 // nuxt.config.ts
 export default defineNuxtConfig({
-    extends: ['./node_modules/@crudadmin/helpers/nuxt'],
+    extends: ['@crudadmin/helpers/nuxt'], // or './node_modules/@crudadmin/helpers/nuxt'
 });
 ```
+
+Upgrading from 2.0: see `MIGRATION-2.0-to-2.1.md`.
+
+## App boot, bootstrap and auth
+
+Off by default. Turn it on and the layer boots the app the same way in every
+project: axios defaults, the auth token, one bootstrap request and its refresh.
+A project then only registers its own stores.
+
+```js
+export default defineNuxtConfig({
+    extends: ['@crudadmin/helpers/nuxt'],
+
+    crudadmin: {
+        bootstrap: {
+            enabled: true,
+            path: 'api/bootstrap', // relative to baseURL
+            baseURL: null, // runtime config public.crudBootstrap.baseURL, then VITE_APP_SERVER_URL
+            only: [], // sections asked for on boot, empty = all
+            ssr: true, // fetch on the server when the app renders there
+            blocking: false, // SPA: wait for the bootstrap before mounting
+            refresh: true, // browser: refresh on reconnect and every refreshSeconds
+            refreshSeconds: 600, // backendEnv.APP_REFRESH_SECONDS wins
+        },
+        auth: {
+            storage: 'auto', // auto | cookie | local | preferences | false
+            cookie: { name: 'auth_token', maxAge: 31536000, sameSite: 'lax', secure: null },
+            logoutOnUnauthorized: true,
+            routes: {
+                login: 'api/auth/login',
+                logout: 'api/auth/logout',
+                register: 'api/auth/register/otp-verify',
+                user: 'api/user',
+                passwordForgot: 'api/auth/password/forgot',
+                passwordReset: 'api/auth/password/reset',
+            },
+        },
+        platform: { type: null, version: null }, // app-type header, native version override
+        capacitor: { enabled: false }, // native boot through @crudadmin/helpers/capacitor
+    },
+});
+```
+
+### What happens
+
+| Where | What |
+| --- | --- |
+| plugin `02.axios` (always) | `Axios` and `Response` learn to find the request (`tryUseNuxtApp`) |
+| plugin `03.bootstrap` | `Axios.configure()` with baseURL, `Authorization` from `authStore`, `app-locale` from `localeStore`; `app-platform`, `app-version`, `app-type` headers; `Response.addStores()` of the helpers stores; token restored from its storage; 401 forgets the user |
+| server, `app:created` | `GET <path>?only=...`, sections bound into the stores, which reach the client with the payload |
+| client after SSR | nothing is fetched again, `crudadmin:bootstrap` runs with `hydrated: true` |
+| client SPA | the bootstrap is fetched in `app:created`, then the refresher starts |
+| plugin `04.capacitor.client` | `new Capacitor({ user, refresh, refreshSeconds }).ready()` instead of the browser refresher |
+
+The bootstrap is fetched in `app:created`, after every plugin, so the stores
+and headers registered by the plugins of other layers (eshop `10`-`19`) and of
+the project are all in place.
+
+Numbered plugins (`NN.name.js`) of every layer extending helpers run in the
+order of their numbers right after pinia, before the Nuxt core plugins and
+before the plugins of the project: helpers `00`-`09`, eshop `10`-`19`. Do not
+use the router in them, use a hook. The project's own plugins are never
+reordered.
+
+### Hooks
+
+```js
+nuxtApp.hook('crudadmin:bootstrap:before', (ctx) => {
+    // { nuxtApp, source, partial, path, only, params, headers }, all mutable
+});
+
+nuxtApp.hook('crudadmin:bootstrap', (ctx) => {
+    // { nuxtApp, source, partial, hydrated, only, response, data }
+    // source: server | client | hydration | refresh | login | register | logout ...
+});
+
+nuxtApp.hook('crudadmin:bootstrap:error', ({ error }) => {});
+nuxtApp.hook('crudadmin:auth:login', ({ user, response, source }) => {});
+nuxtApp.hook('crudadmin:auth:logout', ({ source }) => {}); // logout | unauthorized
+nuxtApp.hook('crudadmin:capacitor:ready', () => {});
+```
+
+### Stores
+
+`useAppStore()` (`app`) holds `booted`, `loading`, `backendEnv`,
+`latestVersion`, `appVersion`, `platform`, the getters `updateAvailable` and
+`updateStoreUrl` (from `backendEnv.APP_STORES`) and `refreshApp(only)`.
+
+`useAuthStore()` (`auth`) has the shape of the PHP helpers `AuthResponse`:
+`token`, `driver`, `user`, `device_tokens`, getters `loggedIn` and `bearer`,
+actions `setAuth()`, `logout()`, `flushData()`.
+
+Both are defined from options exported by `@crudadmin/helpers/definitions`.
+A project extends them by defining the store under the same id; its
+definition wins the auto-import and the layer uses it too:
+
+```js
+import { authStore } from '@crudadmin/helpers/definitions';
+
+export const useAuthStore = defineStore('auth', {
+    ...authStore,
+    getters: { ...authStore.getters, isCourier: (state) => state.driver === 'couriers' },
+});
+```
+
+On the web build the stores are not persisted (the token lives in a cookie,
+so the server renders the logged in state, and it is removed from the html
+payload). The SPA build persists them and keeps the token in localStorage, or
+in Capacitor Preferences with `auth.storage: 'preferences'`.
+
+### Composables
+
+| composable | |
+| --- | --- |
+| `useBootstrap()` | `refresh(only)`, `addSections(sections)`, `ready()` (starts the first bootstrap when needed, awaitable from route middleware on the server), `booted`, `loading`, `path` |
+| `useAuth()` | `login(data)`, `register(data)`, `logout(options)`, `forgotPassword(data)`, `resetPassword(data)` / `setPassword(data)`, `fetchUser()`, `handleResponse(response)`, `setToken(token)`, `user`, `loggedIn`, `store` |
+| `useBackendEnv(key, default)` | a value of `app.backendEnv` |
+| `usePlatformHeaders()` | `{ 'app-platform', 'app-version', 'app-type' }` |
+| `usePlatform()` | `web`, `ios`, `android`... |
+| `useAxios(nuxtApp?)`, `useResponse()` | auto-imported now as well |
+
+Every response of `useAuth()` hydrates the stores like a bootstrap: the
+`store` sections the backend adds to a login (eshop `cart` after merging the
+guest cart) reach their stores, and an `AuthResponse` in `data` fills the
+auth store. Errors are thrown to the caller.
+
+All auto-imports of the layer have a lower priority than the project, so a
+project exporting the same name keeps its own.
+
+## Extension points for layers
+
+```js
+import { Axios, Response } from '@crudadmin/helpers';
+
+// a module level callback, registered under a key: one entry for all requests
+const cartHeaders = ({ pinia }) => ({ 'Cart-Token': useCartStore(pinia).token });
+
+export default defineNuxtPlugin(() => {
+    Response.addStores([useEshopStore, useCartStore]); // definitions, by $id
+    Axios.addHeaders(cartHeaders, 'eshop.cart');
+    Axios.onUnauthorized(({ pinia }) => useCartStore(pinia).$reset(), 'eshop.cart');
+    useBootstrap().addSections(['eshop', 'cart']); // only matters with bootstrap.only
+});
+```
+
+| | |
+| --- | --- |
+| `Response.addStores(definitions)` | adds stores receiving response sections; `setStores()` keeps working and is never overwritten by it |
+| `Response.removeStores(ids)` | |
+| `Axios.addHeaders(callback \| object, key?)` | headers merged into every request; callback gets `{ headers, nuxtApp, pinia }`; returns a remover |
+| `Axios.onUnauthorized(callback, key?)` | every handler runs on a 401, after `options.unauthorized` |
+| `Axios.configure(options)` | merges into the options, where `setOptions()` replaces them |
+
+No request state is kept on the module. A callback registered with a key is
+global and replaces the previous one of that key, so it must read the request
+through the `pinia` it is handed. Without a key, a callback registered in a
+plugin belongs to that request only (kept per nuxtApp in a `WeakMap`). Store
+definitions are static modules and are resolved with the pinia of each
+response.
+
+On a server, `useAxios()` captures the request when it is created. Create it
+in setup, a plugin or a hook, or pass the nuxtApp: `useAxios(nuxtApp)`.
 
 ## Modals and toasts
 
@@ -229,6 +391,7 @@ directory, which is `.nuxt` on Nuxt 3 and `node_modules/.cache/nuxt/.nuxt` on
 Nuxt 4.
 
 Then the catalog of every language is read from `/api/bootstrap?only=locale`
+(`/<crudadmin.bootstrap.path>?only=locale`, from `bootstrap.baseURL` when set)
 and each route path is looked up in it. Translating `/about` to `/o-nas` in the
 administration moves that page, and every link to it follows, because links
 resolve by route name.
@@ -301,6 +464,7 @@ All auto-imported:
 | `useSwitchLocalePath(locale)`    | the current page in another language             |
 | `useSetLocale(locale, options?)` | switch language and navigate there               |
 | `useLocaleParams(params?)`       | route params of this page in the other languages |
+| `useLocalePath(to, locale?)`     | path of a route in a language, the active one by default |
 | `useLocaleCookie()`              | the language cookie                              |
 | `useLocalizationConfig()`        | resolved options                                 |
 

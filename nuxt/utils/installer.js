@@ -1,16 +1,41 @@
 import _ from 'lodash';
 
-// Matches this package's plugin directory. The installed package resolves to
+// Matches this package's plugin directories. The installed package resolves to
 // @crudadmin/helpers, while a linked checkout resolves to its own directory
-// name, so both spellings have to be accepted.
-const PLUGIN_DIRECTORY = /(helpers|crudhelpers)\/nuxt\/plugins\//;
+// name, so both spellings have to be accepted. runtime/plugins holds the
+// plugins the module adds only when their feature is enabled.
+const PLUGIN_DIRECTORY = /(helpers|crudhelpers)\/nuxt\/(runtime\/)?plugins\//;
 
-const isPriorityPlugin = (plugin) => {
-    let prefix = plugin.src.split('/').pop().substr(0, 3);
+// Numbered plugin file: 00.localization.js, 10.eshop.js...
+const NUMBERED = /^(\d{2})\./;
 
-    // Check if plugin prefix starts with 2 numbers and dot (eg: 01., 02., etc...)
-    return PLUGIN_DIRECTORY.test(plugin.src) && /^\d{2}\./.test(prefix);
+const fileName = (plugin) => String(plugin.src || '').split(/[\\/]/).pop();
+
+const normalize = (path) => String(path || '').replace(/\\/g, '/');
+
+/**
+ * Is this a numbered plugin of helpers, or of a layer extending it?
+ *
+ * Layers built on top of helpers number their plugins in the same sequence
+ * (helpers 00-09, eshop 10-19), so they run right after the helpers boot and
+ * before the plugins of the project. The project's own plugins are never
+ * reordered, even numbered ones, they keep running last.
+ */
+const isPriorityPlugin = (plugin, layerDirs = []) => {
+    if (!NUMBERED.test(fileName(plugin))) {
+        return false;
+    }
+
+    const src = normalize(plugin.src);
+
+    if (PLUGIN_DIRECTORY.test(src)) {
+        return true;
+    }
+
+    return layerDirs.some((dir) => src.startsWith(normalize(dir) + '/'));
 };
+
+const pluginNumber = (plugin) => parseInt(fileName(plugin).match(NUMBERED)[1], 10);
 
 // We need push pinia plugin at the beggining of the plugins array,
 // because some of our priority plugins depends on pinia plugin
@@ -30,12 +55,20 @@ const addPriorityPluginsAtBeggining = (plugins) => {
     });
 };
 
-export const regorganizePlugins = (plugins) => {
-    let priorityPlugins = _.filter(plugins, isPriorityPlugin);
+/**
+ * @param plugins   the app plugins
+ * @param layerDirs plugin directories of the layers extending helpers
+ */
+export const regorganizePlugins = (plugins, layerDirs = []) => {
+    // Sorted by their number across all layers, stable for equal numbers
+    let priorityPlugins = _.sortBy(
+        _.filter(plugins, (plugin) => isPriorityPlugin(plugin, layerDirs)),
+        pluginNumber
+    );
 
     let normalPlugins = _.filter(
         plugins,
-        (plugin) => !isPriorityPlugin(plugin)
+        (plugin) => !isPriorityPlugin(plugin, layerDirs)
     );
 
     plugins = addPriorityPluginsAtBeggining(

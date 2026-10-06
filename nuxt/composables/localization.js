@@ -242,3 +242,24 @@ export const useSetLocale = async (locale, options = {}) => {
 export const useLocaleHasPrefix = (locale) => {
     return localeHasPrefix(locale, useLocalizationConfig());
 };
+
+/**
+ * Path of a route in a language, the active one by default.
+ *
+ * The router localizes names and paths into the active language on its own,
+ * so components rarely need this. It is for layers and code building links
+ * as strings (eshop product urls, canonical urls, sitemaps), possibly in
+ * another language:
+ *
+ * useLocalePath({ name: 'products-slug', params: { slug } }, 'en');
+ */
+export const useLocalePath = (to, locale) => {
+    const config = useLocalizationConfig();
+
+    return resolveLocalePath(
+        useRouter(),
+        to,
+        locale || useCurrentLocale(),
+        config
+    );
+};

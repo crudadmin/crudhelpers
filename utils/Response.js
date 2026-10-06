@@ -1,14 +1,105 @@
 import { Toast } from './Toast.js';
+import { resolveScope, runInScope } from './Registry.js';
+
+/*
+ * A store definition is the useXxxStore function returned by defineStore(),
+ * pinia gives it the $id of the store.
+ */
+const isStoreDefinition = (store) =>
+    typeof store === 'function' && typeof store.$id === 'string';
 
 export const Response = new (class Response {
     constructor() {
+        // Legacy list of setStores(), replaced on every call
         this.stores = [];
+
+        // Store definitions added by layers, keyed by the store $id. Only
+        // definitions are kept, they are static modules and not request
+        // state, so the map is safe to share by every request of a server.
+        this.definitions = new Map();
 
         return this;
     }
 
+    /**
+     * Replace the list of stores which receive bootstrap data. Kept for
+     * existing projects, it overwrites what the project set before, but never
+     * the stores added through addStores().
+     */
     setStores(stores) {
         this.stores = stores;
+    }
+
+    /**
+     * Add stores which receive response data, without touching the stores of
+     * the project or of other layers.
+     *
+     * Takes store definitions (useCartStore), one or an array. A definition
+     * registered later under the same $id replaces the previous one, so a
+     * project can register its extended store instead of the layer one.
+     * Resolved per response through the pinia of the request.
+     *
+     * Response.addStores([useEshopStore, useCartStore]);
+     */
+    addStores(stores) {
+        stores = Array.isArray(stores) ? stores : [stores];
+
+        for (const store of stores) {
+            if (isStoreDefinition(store)) {
+                this.definitions.set(store.$id, store);
+            } else if (store) {
+                // prettier-ignore
+                console.warn('[@crudadmin/helpers] Response.addStores() takes store definitions (useXxxStore), not store instances or factories. Use setStores() for those.', store);
+            }
+        }
+
+        return this;
+    }
+
+    /**
+     * Stop sending data to the store of the given $id.
+     */
+    removeStores(ids) {
+        (Array.isArray(ids) ? ids : [ids]).forEach((id) =>
+            this.definitions.delete(isStoreDefinition(id) ? id.$id : id)
+        );
+
+        return this;
+    }
+
+    /**
+     * Every store receiving data: the legacy list first, then the added
+     * definitions resolved with the pinia of the request. A store with the
+     * same $id is bound once.
+     */
+    resolveStores(options = {}) {
+        let stores = this.stores;
+
+        if (typeof stores === 'function') {
+            stores = stores();
+        }
+
+        stores = (stores || []).filter((store) => store);
+
+        const scope = resolveScope(options.scope);
+        const pinia = options.pinia || scope?.$pinia;
+        const ids = new Set(stores.map((store) => store.$id));
+
+        for (const [id, definition] of this.definitions) {
+            if (ids.has(id)) {
+                continue;
+            }
+
+            // Creating a store may need the Nuxt context, see runInScope()
+            stores.push(
+                runInScope(scope, () =>
+                    pinia ? definition(pinia) : definition()
+                )
+            );
+            ids.add(id);
+        }
+
+        return stores;
     }
 
     get(response, options = {}) {
@@ -26,8 +117,8 @@ export const Response = new (class Response {
                 store = response.store || data.store;
 
             //Set store from request data
-            if (store && this.stores) {
-                this.bindStores(store);
+            if (store) {
+                this.bindStores(store, options);
             }
 
             //Validation error
@@ -85,12 +176,19 @@ export const Response = new (class Response {
         }
     }
 
-    bindStores(data) {
-        let stores = this.stores;
-
-        if (typeof stores === 'function') {
-            stores = stores();
+    /**
+     * Assign the sections of a response into the stores.
+     *
+     * options.pinia (or options.scope, a nuxtApp) picks the pinia the added
+     * definitions are resolved with; without it the current request or the
+     * active pinia is used.
+     */
+    bindStores(data, options = {}) {
+        if (!data) {
+            return;
         }
+
+        const stores = this.resolveStores(options);
 
         const bindStore = (store, key, value) => {
             if (typeof store[key] == 'function') {
